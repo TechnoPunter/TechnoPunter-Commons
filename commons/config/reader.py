@@ -2,8 +2,12 @@ import os
 
 import yaml
 
+RESOURCE_PATH_LOC = os.environ.get('RESOURCE_PATH')
+CONF_PATH_LOC = os.path.join(RESOURCE_PATH_LOC, 'config.yaml')
+GENERATED_PATH_LOC = os.environ.get('GENERATED_PATH')
 
-def read_config(file_path: str = 'resources/config/config.yaml'):
+
+def read_config(file_path: str = CONF_PATH_LOC):
     with open(file_path, 'r') as file:
         parent_config = yaml.safe_load(file)
 
@@ -26,18 +30,14 @@ def read_config(file_path: str = 'resources/config/config.yaml'):
 
     parent_config.pop('include', [])
     parent_config.update(merged_config)
+    parent_config['generated'] = GENERATED_PATH_LOC
 
     return parent_config
 
 
-try:
-    cfg = read_config()
-    cfg['generated'] = "generated/"
-except FileNotFoundError:
-    cfg = read_config('../resources/config/config.yaml')
-    cfg['generated'] = '../../generated/'
+cfg = read_config()
 
 # Example usage:
 if __name__ == '__main__':
-    config = read_config('../resources/config/config.yaml')
+    config = read_config()
     print(yaml.dump(config))
