@@ -19,6 +19,7 @@ def setup_logging(log_file_name: str = "calcV1.log", file_path: str = RESOURCE_P
     config['handlers']['fileHandler']['filename'] = os.path.join(LOGGING_PATH_LOC, log_file_name)
     logging.config.dictConfig(config)
 
+setup_logging()
 
 if __name__ == "__main__":
     setup_logging()
