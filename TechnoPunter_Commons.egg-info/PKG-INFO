@@ -1,0 +1,6 @@
+Metadata-Version: 2.1
+Name: TechnoPunter-Commons
+Version: 1.0.0
+Requires-Dist: pydantic
+Requires-Dist: sqlalchemy
+Requires-Dist: pyyaml

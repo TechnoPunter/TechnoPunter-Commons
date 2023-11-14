@@ -2,5 +2,5 @@
 .venv
 __pycache__/
 logs/
-resources/config/
+commons/resources/config/
 .pytest_cache

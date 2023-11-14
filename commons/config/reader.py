@@ -34,10 +34,10 @@ try:
     cfg = read_config()
     cfg['generated'] = "generated/"
 except FileNotFoundError:
-    cfg = read_config('../../resources/config/config.yaml')
+    cfg = read_config('../resources/config/config.yaml')
     cfg['generated'] = '../../generated/'
 
 # Example usage:
 if __name__ == '__main__':
-    config = read_config('../../resources/config/config.yaml')
+    config = read_config('../resources/config/config.yaml')
     print(yaml.dump(config))

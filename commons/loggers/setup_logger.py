@@ -22,13 +22,13 @@ def setup_logging(log_file_name: str = "calcV1.log", file_path: str = 'resources
 try:
     setup_logging()
 except FileNotFoundError:
-    setup_logging(file_path='../../resources/config')
+    setup_logging(file_path='../resources/config')
 
 if __name__ == "__main__":
     try:
         setup_logging()
     except FileNotFoundError:
-        setup_logging(file_path='../../resources/config')
+        setup_logging(file_path='../resources/config')
     logger = logging.getLogger(__name__)
     logger.info("Hello World!")
 
