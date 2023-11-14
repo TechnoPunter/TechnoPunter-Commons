@@ -1,3 +1,7 @@
 pydantic
 sqlalchemy
 pyyaml
+pandas
+requests
+websocket-client
+psycopg2-binary

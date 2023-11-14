@@ -4,3 +4,7 @@ Version: 1.0.0
 Requires-Dist: pydantic
 Requires-Dist: sqlalchemy
 Requires-Dist: pyyaml
+Requires-Dist: pandas
+Requires-Dist: requests
+Requires-Dist: websocket-client
+Requires-Dist: psycopg2-binary
