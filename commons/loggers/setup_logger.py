@@ -4,10 +4,11 @@ import os
 
 import yaml
 
+RESOURCE_PATH_LOC = os.environ.get('RESOURCE_PATH')
+LOGGING_PATH_LOC = os.environ.get('LOG_PATH')
 
-def setup_logging(log_file_name: str = "calcV1.log", file_path: str = 'resources/config'):
-    module_path = os.path.dirname(os.path.abspath(__file__))
 
+def setup_logging(log_file_name: str = "calcV1.log", file_path: str = RESOURCE_PATH_LOC):
     try:
         with open(file_path + "/logging-local.yaml", 'r') as child_file:
             config = yaml.safe_load(child_file)
@@ -15,20 +16,11 @@ def setup_logging(log_file_name: str = "calcV1.log", file_path: str = 'resources
         with open(file_path + "/logging.yaml", 'r') as child_file:
             config = yaml.safe_load(child_file)
 
-    config['handlers']['fileHandler']['filename'] = module_path + "/../../logs/" + log_file_name
+    config['handlers']['fileHandler']['filename'] = os.path.join(LOGGING_PATH_LOC, log_file_name)
     logging.config.dictConfig(config)
 
 
-try:
-    setup_logging()
-except FileNotFoundError:
-    setup_logging(file_path='../resources/config')
-
 if __name__ == "__main__":
-    try:
-        setup_logging()
-    except FileNotFoundError:
-        setup_logging(file_path='../resources/config')
+    setup_logging()
     logger = logging.getLogger(__name__)
     logger.info("Hello World!")
-
