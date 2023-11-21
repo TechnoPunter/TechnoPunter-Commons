@@ -7,8 +7,8 @@ from commons.dataprovider.database import Base
 class LogStore(Base):
     __tablename__ = 'log_store'
 
-    log_id = Column(Integer, primary_key=True, autoincrement=True)
+    log_id = Column(Integer, primary_key=True)
     log_key = Column(String)
     log_type = Column(String)
-    data = Column(JSONB)
+    log_data = Column(JSONB)
     log_time = Column(Integer)
