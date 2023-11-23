@@ -2,9 +2,13 @@ import datetime
 import logging
 import time
 
+import pandas as pd
+
 from commons.consts.consts import IST
+from commons.dataprovider.database import DatabaseEngine
 
 logger = logging.getLogger(__name__)
+LOG_STORE_MODEL = "LogStore"
 
 
 def get_epoch(date_string: str):
@@ -66,3 +70,27 @@ def get_new_sl(order: dict, ltp: float = None):
     else:
         logger.info(f"get_new_sl: Same sl for {order['scrip']} @ {ltp}")
         return "0.0"
+
+
+def log_entry(trader_db: DatabaseEngine, log_type: str, keys: list[str], data):
+    """
+    Makes entry in LogStore table - Also takes care of NaN in dict
+    {
+        "log_key": {log_type}_{keys},
+        "log_type": log_type,
+        "log_data": JSON,
+        "log_time": get_epoch(0)
+    }
+    """
+    log_key = "_".join([log_type] + keys)
+    if isinstance(data, pd.DataFrame):
+        log_data = data.fillna(0).to_dict()
+    else:
+        log_data = data
+    rec = {
+        "log_key": log_key,
+        "log_type": log_type,
+        "log_data": log_data,
+        "log_time": get_epoch("0")
+    }
+    trader_db.single_insert(LOG_STORE_MODEL, rec)
