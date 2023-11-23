@@ -93,4 +93,5 @@ def log_entry(trader_db: DatabaseEngine, log_type: str, keys: list[str], data):
         "log_data": log_data,
         "log_time": get_epoch("0")
     }
+    trader_db.delete_recs(table=LOG_STORE_MODEL, predicate=f"m.{LOG_STORE_MODEL}.log_key == '{log_key}'")
     trader_db.single_insert(LOG_STORE_MODEL, rec)
