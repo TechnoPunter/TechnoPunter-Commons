@@ -84,7 +84,7 @@ def log_entry(trader_db: DatabaseEngine, log_type: str, keys: list[str], data):
     """
     log_key = "_".join([log_type] + keys)
     if isinstance(data, pd.DataFrame):
-        log_data = data.fillna(0).to_dict()
+        log_data = data.fillna(0).to_dict(orient="records")
     else:
         log_data = data
     rec = {
