@@ -1,3 +1,4 @@
+import datetime
 import logging
 import os
 from multiprocessing import Pool
@@ -60,8 +61,15 @@ class FastBT:
 
     def prep_data(self, scrip, strategy, raw_pred_df: pd.DataFrame):
         logger.info(f"Entering Prep data for {scrip} with {len(raw_pred_df)} predictions")
-        raw_pred_df = raw_pred_df[['target', 'signal', 'time']]
-        raw_pred_df['time'] = raw_pred_df['time'].shift(-1)
+
+        if len(raw_pred_df) > 1:
+            # This would be a backtest prediction file
+            raw_pred_df = raw_pred_df[['target', 'signal', 'time']]
+            raw_pred_df['time'] = raw_pred_df['time'].shift(-1)
+        else:
+            # This would be Next Close file
+            pass
+
         raw_pred_df['date'] = pd.to_datetime(raw_pred_df['time'], unit='s', utc=True)
         raw_pred_df['date'] = raw_pred_df['date'].dt.tz_convert(IST)
         raw_pred_df['date'] = raw_pred_df['date'].dt.date
@@ -126,16 +134,28 @@ class FastBT:
             "s_pct": s_pnl * 100 / s_avg_cost, "s_entry_pct": len(s_trades) * 100 / count
         }
 
-    def get_accuracy(self, param: dict):
+    def get_accuracy(self, param):
 
         setup_logging()
-        logger = logging.getLogger(__name__)
+        func_logger = logging.getLogger(__name__)
 
-        strategy = param.get('strategy')
-        scrip = param.get('scrip')
-        raw_pred_df = param.get('raw_pred_df')
-        logger.debug(f"Getting results for {scrip} & {strategy}")
-        merged_df, count = self.prep_data(scrip, strategy, raw_pred_df=raw_pred_df)
+        if isinstance(param, dict):
+            strategy = param.get('strategy')
+            scrip = param.get('scrip')
+            raw_pred_df = param.get('raw_pred_df')
+            func_logger.debug(f"Getting dict based results for {scrip} & {strategy}")
+            merged_df, count = self.prep_data(scrip, strategy, raw_pred_df=raw_pred_df)
+        else:
+            _, rec = param
+            df = pd.DataFrame([rec])
+            strategy = rec.get('model')
+            scrip = rec.get('scrip')
+            func_logger.debug(f"Getting DF based results for {scrip} & {strategy}")
+            date_format = '%Y-%m-%d %H:%M:%S'
+            date_string = rec.get('trade_date') + ' 09:15:00'
+            trade_time = int(IST.localize(datetime.datetime.strptime(date_string, date_format)).timestamp())
+            df.loc[:, 'time'] = trade_time
+            merged_df, count = self.prep_data(scrip, strategy, raw_pred_df=df[['target', 'signal', 'time']])
 
         # Is the target still available at open i.e. 9:15 candle?
         merged_df['is_valid'] = merged_df.apply(is_valid, axis=1)
@@ -145,6 +165,8 @@ class FastBT:
 
         # Identify valid days
         valid_df = merged_df.loc[merged_df.is_valid]
+        if len(valid_df) == 0:
+            return pd.DataFrame(), {}
         valid_df.set_index('date', inplace=True)
         merged_df = merged_df[merged_df.date.isin(valid_df.index)]
 
@@ -160,9 +182,13 @@ class FastBT:
         # Max Loss
 
         merged_df['target_met'] = merged_df.apply(target_met, axis=1)
-        target_met_df = merged_df[merged_df['target_met']].groupby('date').apply(lambda r: r['target_met'].idxmin())
-        final_df = pd.merge(valid_df, pd.DataFrame(target_met_df), how='left', left_index=True, right_index=True)
-        final_df.rename({0: 'target_candle'}, axis=1, inplace=True)
+        if len(merged_df[merged_df['target_met']]) > 0:
+            target_met_df = merged_df[merged_df['target_met']].groupby('date').apply(lambda r: r['target_met'].idxmin())
+            final_df = pd.merge(valid_df, pd.DataFrame(target_met_df), how='left', left_index=True, right_index=True)
+            final_df.rename({0: 'target_candle'}, axis=1, inplace=True)
+        else:
+            final_df = valid_df
+            final_df.loc[:, 'target_candle'] = float('nan')
 
         merged_df['mtm'] = merged_df.apply(calc_mtm, axis=1)
         mtm_max_df = merged_df.groupby('date').apply(lambda r: r['mtm'].max())
@@ -184,7 +210,7 @@ class FastBT:
         final_df[cols] = final_df[cols].astype(float).apply(lambda x: np.round(x, decimals=2))
 
         stats = self.calc_stats(final_df, count, scrip, strategy)
-        logger.debug(f"Evaluated: {scrip} & {strategy} with {len(final_df)} trades")
+        func_logger.debug(f"Evaluated: {scrip} & {strategy} with {len(final_df)} trades")
         return final_df, stats
 
     def run_accuracy(self, params: list[dict]):
@@ -204,9 +230,28 @@ class FastBT:
         result_stats = pd.DataFrame(stats)
         return result_trades, result_stats
 
+    def run_cob_accuracy(self, params: pd.DataFrame):
+        logger.info(f"run_accuracy: Started with {len(params)} scrips")
+        trades = []
+        stats = []
+        valid_trades = params.loc[params.entry_order_status == 'COMPLETE']
+
+        try:
+            pool = Pool()
+            result_set = pool.imap(self.get_accuracy, valid_trades.iterrows())
+            for trade, stat in result_set:
+                trades.append(trade)
+                stats.append(stat)
+        except Exception as ex:
+            logger.error(f"Error in Multi Processing {ex}")
+        result_trades = pd.concat(trades)
+        result_trades.sort_values(by=['date', 'scrip'], inplace=True)
+        result_stats = pd.DataFrame(stats)
+        result_stats.dropna(subset=['scrip'], inplace=True)
+        return result_trades, result_stats
+
 
 if __name__ == '__main__':
-
     setup_logging()
 
     f = FastBT()
@@ -218,5 +263,12 @@ if __name__ == '__main__':
             params_.append({"scrip": scrip_, "strategy": strategy_, "raw_pred_df": raw_pred_df_})
 
     bt_trades, bt_stats = f.run_accuracy(params_)
+    logger.info(f"\n{bt_trades}")
+    logger.info(f"\n{bt_stats}")
+
+    params_df = pd.read_json(
+        "/Users/pralhad/Documents/99-src/98-trading/trade-exec-engine/resources/test/cob/cob-params.json")
+    params_df.loc[:, 'trade_date'] = '2023-11-24'
+    bt_trades, bt_stats = f.run_cob_accuracy(params=params_df)
     logger.info(f"\n{bt_trades}")
     logger.info(f"\n{bt_stats}")
