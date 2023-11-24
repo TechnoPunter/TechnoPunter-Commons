@@ -81,7 +81,9 @@ def log_entry(trader_db: DatabaseEngine, log_type: str, keys: list[str], acct, l
         "log_time": get_epoch(0)
     }
     """
-    key_list = [log_type, keys, log_date, acct]
+    key_list = [log_type] + keys
+    key_list.append(log_date)
+    key_list.append(acct)
     log_key = "_".join(key_list)
     if isinstance(data, pd.DataFrame):
         log_data = data.fillna(0).to_dict(orient="records")
