@@ -1,5 +1,6 @@
 import logging
 import os
+from multiprocessing import Pool
 
 import numpy as np
 import pandas as pd
@@ -7,6 +8,7 @@ import pandas as pd
 from commons.config.reader import cfg
 from commons.consts.consts import IST
 from commons.dataprovider.filereader import get_tick_data, get_base_data
+from commons.loggers.setup_logger import setup_logging
 
 MODEL_PREFIX = 'trainer.strategies.'
 logger = logging.getLogger(__name__)
@@ -125,6 +127,10 @@ class FastBT:
         }
 
     def get_accuracy(self, param: dict):
+
+        setup_logging()
+        logger = logging.getLogger(__name__)
+
         strategy = param.get('strategy')
         scrip = param.get('scrip')
         raw_pred_df = param.get('raw_pred_df')
@@ -185,10 +191,14 @@ class FastBT:
         logger.info(f"run_accuracy: Started with {len(params)} scrips")
         trades = []
         stats = []
-        for param in params:
-            trade, stat = self.get_accuracy(param=param)
-            trades.append(trade)
-            stats.append(stat)
+        try:
+            pool = Pool(processes=8)
+            result_set = pool.imap(self.get_accuracy, params)
+            for trade, stat in result_set:
+                trades.append(trade)
+                stats.append(stat)
+        except Exception as ex:
+            logger.error(f"Error in Multi Processing {ex}")
         result_trades = pd.concat(trades)
         result_trades.sort_values(by=['date', 'scrip'], inplace=True)
         result_stats = pd.DataFrame(stats)
@@ -196,7 +206,6 @@ class FastBT:
 
 
 if __name__ == '__main__':
-    from commons.loggers.setup_logger import setup_logging
 
     setup_logging()
 
@@ -209,5 +218,5 @@ if __name__ == '__main__':
             params_.append({"scrip": scrip_, "strategy": strategy_, "raw_pred_df": raw_pred_df_})
 
     bt_trades, bt_stats = f.run_accuracy(params_)
-    logger.info(bt_trades)
-    logger.info(bt_stats)
+    logger.info(f"\n{bt_trades}")
+    logger.info(f"\n{bt_stats}")
