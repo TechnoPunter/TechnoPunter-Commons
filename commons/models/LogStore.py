@@ -11,4 +11,6 @@ class LogStore(Base):
     log_key = Column(String)
     log_type = Column(String)
     log_data = Column(JSONB)
+    acct = Column(String)
+    log_date = Column(String)
     log_time = Column(Integer)

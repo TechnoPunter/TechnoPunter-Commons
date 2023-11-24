@@ -4,11 +4,10 @@ import time
 
 import pandas as pd
 
-from commons.consts.consts import IST
+from commons.consts.consts import IST, LOG_STORE_MODEL
 from commons.dataprovider.database import DatabaseEngine
 
 logger = logging.getLogger(__name__)
-LOG_STORE_MODEL = "LogStore"
 
 
 def get_epoch(date_string: str):
@@ -72,7 +71,7 @@ def get_new_sl(order: dict, ltp: float = None):
         return "0.0"
 
 
-def log_entry(trader_db: DatabaseEngine, log_type: str, keys: list[str], data):
+def log_entry(trader_db: DatabaseEngine, log_type: str, keys: list[str], acct, log_date, data):
     """
     Makes entry in LogStore table - Also takes care of NaN in dict
     {
@@ -82,7 +81,8 @@ def log_entry(trader_db: DatabaseEngine, log_type: str, keys: list[str], data):
         "log_time": get_epoch(0)
     }
     """
-    log_key = "_".join([log_type] + keys)
+    key_list = [log_type, keys, log_date, acct]
+    log_key = "_".join(key_list)
     if isinstance(data, pd.DataFrame):
         log_data = data.fillna(0).to_dict(orient="records")
     else:
@@ -91,7 +91,9 @@ def log_entry(trader_db: DatabaseEngine, log_type: str, keys: list[str], data):
         "log_key": log_key,
         "log_type": log_type,
         "log_data": log_data,
-        "log_time": get_epoch("0")
+        "log_time": get_epoch("0"),
+        "log_date": log_date,
+        "acct": acct
     }
     trader_db.delete_recs(table=LOG_STORE_MODEL, predicate=f"m.{LOG_STORE_MODEL}.log_key == '{log_key}'")
     trader_db.single_insert(LOG_STORE_MODEL, rec)
