@@ -17,3 +17,6 @@ TRAIN_TEST_SPLIT_PCT = 0.99
 IST = pytz.timezone('Asia/Kolkata')
 MODEL_SAVE_FILE_NAME = '.sav'
 TODAY = datetime.datetime.today().date()
+S_TODAY = str(TODAY)
+PARAMS_LOG_TYPE = "Params"
+BROKER_TRADE_LOG_TYPE = "BrokerTrades"
