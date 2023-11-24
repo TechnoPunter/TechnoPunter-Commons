@@ -26,6 +26,7 @@ S_TODAY = str(TODAY)
 # Log Types
 PARAMS_LOG_TYPE = "Params"
 BROKER_TRADE_LOG_TYPE = "BrokerTrades"
+BT_TRADE_LOG_TYPE = "BacktestTrades"
 
 # Models
 LOG_STORE_MODEL = "LogStore"
