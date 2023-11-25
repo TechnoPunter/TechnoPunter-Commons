@@ -21,10 +21,8 @@ class ScripDataService:
 
     def load_scrip_data(self, scrip_name, num_days: int = 7):
         logger.info(f"Started loading for Scrip: {len(scrip_name)}")
-        print(scrip_name)
         tick = self.s.get_tick_data(scrip_name=scrip_name, num_days=num_days)
         self.sd.load_scrip_data(data=tick, scrip_name=scrip_name, time_frame=Interval.in_1_minute)
-        print(scrip_name)
         time.sleep(2)
         base = self.s.get_base_data(scrip_name=scrip_name, num_days=num_days)
         self.sd.load_scrip_data(data=base, scrip_name=scrip_name, time_frame=Interval.in_daily)

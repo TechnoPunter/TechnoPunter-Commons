@@ -5,6 +5,7 @@ import os
 import shutil
 import signal
 import subprocess
+import urllib
 from urllib.request import urlopen
 
 import pandas as pd
@@ -237,6 +238,7 @@ class Shoonya:
         exchange = scrip_name.split("_")[0]
         symbol = scrip_name.replace(exchange + "_", "") + "-EQ"
         symbol = SCRIP_MAP.get(symbol, symbol)
+        # symbol = urllib.parse.quote(symbol)
         start_date = datetime.date.today() - datetime.timedelta(days=num_days)
         result = None
         signal.alarm(10)
@@ -290,3 +292,7 @@ if __name__ == '__main__':
     s = Shoonya(acct='Trader-V2-Pralhad')
     ob = s.api_get_order_book()
     print(ob)
+    scrip = 'NSE_M_M'
+    # scrip = 'NSE_BAJAJ_AUTO'
+    x = s.get_base_data(scrip)
+    print(x)
