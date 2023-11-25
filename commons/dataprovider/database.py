@@ -29,6 +29,8 @@ class DatabaseEngine:
     engine: Engine
     tables: list
 
+    _ = insert
+
     def __init__(self):
         self.cfg = cfg
         self.engine = self.get_connection()
@@ -88,11 +90,23 @@ class DatabaseEngine:
 
         :param table:
         :param predicate: Where clause as per SQL Alchemy syntax
-        :return:
+        :return: List of objects of type <table>
         """
         m = next((m for m in self.tables if m.__name__ == self.package_name + "." + table), None)
         assert m is not None, f"Invalid table name {table}"
         results = eval(f"self.session.query(m.{table}).filter({predicate}).all()")
+        return results
+
+    def query_df(self, table, predicate) -> pd.DataFrame:
+        """
+
+        :param table:
+        :param predicate: Where clause as per SQL Alchemy syntax
+        :return: Pandas DF in shape of <table>
+        """
+        m = next((m for m in self.tables if m.__name__ == self.package_name + "." + table), None)
+        assert m is not None, f"Invalid table name {table}"
+        results = eval(f"pd.read_sql(self.session.query(m.{table}).filter({predicate}).statement,self.engine)")
         return results
 
     def run_query(self, tbl: str, predicate: str = None):

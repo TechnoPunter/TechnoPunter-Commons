@@ -172,7 +172,7 @@ CREATE TABLE public.log_store(
 
 CREATE TABLE public.scrip_hist(
 	scrip varchar NOT NULL,
-	timestamp int4 NOT NULL,
+	time int4 NOT NULL,
 	time_frame varchar NOT NULL,
 	date varchar NOT NULL,
 	open float4 NULL,
