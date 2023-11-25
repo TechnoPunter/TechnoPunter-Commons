@@ -27,7 +27,7 @@ class ScripData:
         predicate += f",m.{SCRIP_HIST}.time  >= '{from_epoch}'"
         self.trader_db.delete_recs(SCRIP_HIST, predicate=predicate)
 
-        df['date'] = pd.to_datetime(df['time'], unit='s', utc=True)
+        df['date'] = pd.to_datetime(df['time'].astype(int), unit='s', utc=True)
         df['date'] = df['date'].dt.tz_convert(IST)
         df['date'] = df['date'].dt.date
         df['date'] = df['date'].astype(str)

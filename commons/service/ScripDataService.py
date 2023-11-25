@@ -37,4 +37,4 @@ class ScripDataService:
 if __name__ == '__main__':
     sds = ScripDataService()
     scrip = 'NSE_ONGC'
-    sds.load_scrips_data(cfg['steps']['scrips'], num_days=180)
+    sds.load_scrips_data(cfg['steps']['scrips'], num_days=365)
