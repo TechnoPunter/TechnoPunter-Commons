@@ -10,6 +10,7 @@ from commons.config.reader import cfg
 from commons.consts.consts import IST
 from commons.dataprovider.filereader import get_tick_data, get_base_data
 from commons.loggers.setup_logger import setup_logging
+from commons.utils.Misc import get_bod_epoch
 
 MODEL_PREFIX = 'trainer.strategies.'
 logger = logging.getLogger(__name__)
@@ -151,9 +152,7 @@ class FastBT:
             strategy = rec.get('model')
             scrip = rec.get('scrip')
             func_logger.debug(f"Getting DF based results for {scrip} & {strategy}")
-            date_format = '%Y-%m-%d %H:%M:%S'
-            date_string = rec.get('trade_date') + ' 09:15:00'
-            trade_time = int(IST.localize(datetime.datetime.strptime(date_string, date_format)).timestamp())
+            trade_time = get_bod_epoch(rec.get('trade_date'))
             df.loc[:, 'time'] = trade_time
             merged_df, count = self.prep_data(scrip, strategy, raw_pred_df=df[['target', 'signal', 'time']])
 

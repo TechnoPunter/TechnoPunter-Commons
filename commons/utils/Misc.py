@@ -10,6 +10,14 @@ from commons.dataprovider.database import DatabaseEngine
 logger = logging.getLogger(__name__)
 
 
+def get_bod_epoch(date_string: str):
+    date_format = '%Y-%m-%d %H:%M:%S'
+    if len(date_string) == 10:
+        date_string = date_string + ' 09:15:00'
+    trade_time = int(IST.localize(datetime.datetime.strptime(date_string, date_format)).timestamp())
+    return trade_time
+
+
 def get_epoch(date_string: str):
     if date_string == '0':
         return int(time.time())
