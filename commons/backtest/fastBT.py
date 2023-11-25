@@ -1,4 +1,3 @@
-import datetime
 import logging
 import os
 from multiprocessing import Pool
@@ -8,7 +7,8 @@ import pandas as pd
 
 from commons.config.reader import cfg
 from commons.consts.consts import IST
-from commons.dataprovider.ScripData import get_tick_data, get_base_data
+from commons.dataprovider.ScripData import ScripData
+from commons.dataprovider.database import DatabaseEngine
 from commons.loggers.setup_logger import setup_logging
 from commons.utils.Misc import get_bod_epoch
 
@@ -59,6 +59,12 @@ def calc_mtm(row):
 
 
 class FastBT:
+    trader_db: DatabaseEngine
+    sd: ScripData
+
+    def __init__(self):
+        self.trader_db = DatabaseEngine()
+        self.sd = ScripData()
 
     def prep_data(self, scrip, strategy, raw_pred_df: pd.DataFrame):
         logger.info(f"Entering Prep data for {scrip} with {len(raw_pred_df)} predictions")
@@ -78,7 +84,7 @@ class FastBT:
         raw_pred_df.dropna(subset=['date'], inplace=True)
 
         # Get 1-Min data (tick data) and join with raw_pred_df
-        tick_data = get_tick_data(scrip)
+        tick_data = self.sd.get_tick_data(scrip)
         merged_df = pd.merge(tick_data, raw_pred_df, how='left', left_on='time', right_on='time')
         merged_df['datetime'] = pd.to_datetime(merged_df['time'], unit='s', utc=True)
         merged_df['datetime'] = merged_df['datetime'].dt.tz_convert(IST)
@@ -86,7 +92,7 @@ class FastBT:
         merged_df.set_index('datetime', inplace=True)
 
         # Get the Daily data (base data) and join with merged DF this is to get the closing price for the day
-        base_data = get_base_data(scrip)
+        base_data = self.sd.get_base_data(scrip)
         base_data = base_data[['time', 'close']]
         base_data.rename(columns={"close": "day_close"}, inplace=True)
         merged_df = pd.merge(merged_df, base_data, how='left', left_on='time', right_on='time')
@@ -216,14 +222,18 @@ class FastBT:
         logger.info(f"run_accuracy: Started with {len(params)} scrips")
         trades = []
         stats = []
-        try:
-            pool = Pool(processes=8)
-            result_set = pool.imap(self.get_accuracy, params)
-            for trade, stat in result_set:
-                trades.append(trade)
-                stats.append(stat)
-        except Exception as ex:
-            logger.error(f"Error in Multi Processing {ex}")
+        for param in params:
+            trade, stat = self.get_accuracy(param)
+            trades.append(trade)
+            stats.append(stat)
+        # try:
+        #     pool = Pool(processes=8)
+        #     result_set = pool.imap(self.get_accuracy, params)
+        #     for trade, stat in result_set:
+        #         trades.append(trade)
+        #         stats.append(stat)
+        # except Exception as ex:
+        #     logger.error(f"Error in Multi Processing {ex}")
         result_trades = pd.concat(trades)
         result_trades.sort_values(by=['date', 'scrip'], inplace=True)
         result_stats = pd.DataFrame(stats)
@@ -234,15 +244,18 @@ class FastBT:
         trades = []
         stats = []
         valid_trades = params.loc[params.entry_order_status == 'COMPLETE']
-
-        try:
-            pool = Pool()
-            result_set = pool.imap(self.get_accuracy, valid_trades.iterrows())
-            for trade, stat in result_set:
-                trades.append(trade)
-                stats.append(stat)
-        except Exception as ex:
-            logger.error(f"Error in Multi Processing {ex}")
+        for param in valid_trades.iterrows():
+            trade, stat = self.get_accuracy(param)
+            trades.append(trade)
+            stats.append(stat)
+        # try:
+        #     pool = Pool()
+        #     result_set = pool.imap(self.get_accuracy, valid_trades.iterrows())
+        #     for trade, stat in result_set:
+        #         trades.append(trade)
+        #         stats.append(stat)
+        # except Exception as ex:
+        #     logger.error(f"Error in Multi Processing {ex}")
         result_trades = pd.concat(trades)
         result_trades.sort_values(by=['date', 'scrip'], inplace=True)
         result_stats = pd.DataFrame(stats)
