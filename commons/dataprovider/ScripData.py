@@ -1,8 +1,7 @@
 import pandas as pd
 
-from commons.consts.consts import SCRIP_HIST, IST
+from commons.consts.consts import SCRIP_HIST, IST, Interval
 from commons.dataprovider.database import DatabaseEngine
-from commons.dataprovider.tvfeed import Interval
 
 
 class ScripData:

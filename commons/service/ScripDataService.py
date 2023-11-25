@@ -4,7 +4,7 @@ import time
 from commons.broker.Shoonya import Shoonya
 from commons.config.reader import cfg
 from commons.dataprovider.ScripData import ScripData
-from commons.dataprovider.tvfeed import Interval
+from commons.consts.consts import Interval
 
 logger = logging.getLogger(__name__)
 

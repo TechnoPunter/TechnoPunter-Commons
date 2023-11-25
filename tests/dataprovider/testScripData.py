@@ -18,8 +18,7 @@ os.environ['GENERATED_PATH'] = os.path.join(REPO_PATH, 'dummy')
 logger = logging.getLogger(__name__)
 
 from commons.dataprovider.ScripData import ScripData
-from commons.dataprovider.tvfeed import Interval
-from commons.consts.consts import SCRIP_HIST
+from commons.consts.consts import SCRIP_HIST, Interval
 
 
 class TestScripData(unittest.TestCase):

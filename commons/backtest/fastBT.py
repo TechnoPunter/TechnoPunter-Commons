@@ -8,7 +8,7 @@ import pandas as pd
 
 from commons.config.reader import cfg
 from commons.consts.consts import IST
-from commons.dataprovider.filereader import get_tick_data, get_base_data
+from commons.dataprovider.ScripData import get_tick_data, get_base_data
 from commons.loggers.setup_logger import setup_logging
 from commons.utils.Misc import get_bod_epoch
 

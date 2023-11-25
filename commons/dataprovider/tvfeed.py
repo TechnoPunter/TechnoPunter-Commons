@@ -1,5 +1,3 @@
-import datetime
-import enum
 import json
 import logging
 import random
@@ -11,27 +9,12 @@ import requests
 from websocket import create_connection
 
 from commons.config.reader import cfg
+from commons.consts.consts import Interval
 
 logger = logging.getLogger(__name__)
 
 base_path = cfg['base-data-dir-path']
 tick_path = cfg['low-tf-data-dir-path']
-
-
-class Interval(enum.Enum):
-    in_1_minute = "1"
-    in_3_minute = "3"
-    in_5_minute = "5"
-    in_15_minute = "15"
-    in_30_minute = "30"
-    in_45_minute = "45"
-    in_1_hour = "1H"
-    in_2_hour = "2H"
-    in_3_hour = "3H"
-    in_4_hour = "4H"
-    in_daily = "1D"
-    in_weekly = "1W"
-    in_monthly = "1M"
 
 
 class TvDatafeed:
