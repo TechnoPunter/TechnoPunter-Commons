@@ -30,3 +30,4 @@ BT_TRADE_LOG_TYPE = "BacktestTrades"
 
 # Models
 LOG_STORE_MODEL = "LogStore"
+SCRIP_HIST = "ScripHist"

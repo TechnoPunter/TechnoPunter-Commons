@@ -5,3 +5,4 @@ pandas
 requests
 websocket-client
 psycopg2-binary
+pytest

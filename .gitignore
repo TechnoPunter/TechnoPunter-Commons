@@ -3,4 +3,5 @@
 __pycache__/
 logs/
 commons/resources/config/
+resources/config/
 .pytest_cache

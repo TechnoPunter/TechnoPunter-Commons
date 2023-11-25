@@ -168,3 +168,16 @@ CREATE TABLE public.log_store(
 	CONSTRAINT log_store_pk PRIMARY KEY (log_id),
 	CONSTRAINT log_store_un UNIQUE (log_key)
 );
+
+
+CREATE TABLE public.scrip_hist(
+	scrip varchar NOT NULL,
+	timestamp int4 NOT NULL,
+	time_frame int4 NOT NULL,
+	date varchar NOT NULL,
+	open float4 NULL,
+	high float4 NULL,
+	low float4 NULL,
+	close float4 NULL,
+	CONSTRAINT scrip_hist_pk PRIMARY KEY (scrip, timestamp, time_frame)
+);
