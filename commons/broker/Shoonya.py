@@ -3,6 +3,7 @@ import json
 import logging
 import os
 import shutil
+import signal
 import subprocess
 from urllib.request import urlopen
 
@@ -23,6 +24,14 @@ SCRIP_MAP = {'BAJAJ_AUTO-EQ': 'BAJAJ-AUTO-EQ', 'M_M-EQ': 'M&M-EQ'}
 
 def get_order_type(message):
     return message.get('remarks', 'NA').split(":")[0]
+
+
+def alarm_handler(signum, frame):
+    print(f"ALARM signal received {signum} at {frame}")
+    raise Exception()
+
+
+signal.signal(signal.SIGALRM, alarm_handler)
 
 
 class Shoonya:
@@ -227,13 +236,24 @@ class Shoonya:
     def api_get_hist_prices(self, scrip_name, num_days: int = 7):
         exchange = scrip_name.split("_")[0]
         symbol = scrip_name.replace(exchange + "_", "") + "-EQ"
+        symbol = SCRIP_MAP.get(symbol, symbol)
         start_date = datetime.date.today() - datetime.timedelta(days=num_days)
-
-        return self.api.get_daily_price_series(exchange, symbol, startdate=get_bod_epoch(str(start_date)))
+        result = None
+        signal.alarm(10)
+        try:
+            result = self.api.get_daily_price_series(exchange, symbol, startdate=get_bod_epoch(str(start_date)))
+        except Exception as ex:
+            print(ex)
+        signal.alarm(0)
+        return result
 
     def get_base_data(self, scrip_name, num_days: int = 800):
         recs = []
-        prices = self.api_get_hist_prices(scrip_name, num_days)
+        prices = None
+        while prices is None:
+            print(f"Getting base data for {scrip_name}")
+            prices = self.api_get_hist_prices(scrip_name, num_days)
+        print(len(prices))
         for price in prices:
             recs.append(json.loads(price))
 
@@ -245,11 +265,21 @@ class Shoonya:
         symbol = scrip_name.replace(exchange + "_", "") + "-EQ"
         token = self.__get_token(symbol)
         start_date = datetime.date.today() - datetime.timedelta(days=num_days)
-
-        return self.api.get_time_price_series(exchange, token, starttime=get_bod_epoch(str(start_date)))
+        result = None
+        signal.alarm(30)
+        try:
+            result = self.api.get_time_price_series(exchange, token, starttime=get_bod_epoch(str(start_date)))
+        except Exception as ex:
+            print(ex)
+        signal.alarm(0)
+        return result
 
     def get_tick_data(self, scrip_name, num_days: int = 10):
-        prices = self.api_get_time_series(scrip_name, num_days)
+        prices = None
+        while prices is None:
+            print(f"Getting tick data for {scrip_name}")
+            prices = self.api_get_time_series(scrip_name, num_days)
+        print(len(prices))
 
         df = self.__format_result(prices, time_format="datetime")
         return df
