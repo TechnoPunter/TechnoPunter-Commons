@@ -12,6 +12,10 @@ from commons.loggers.setup_logger import setup_logging
 from commons.utils.Misc import get_bod_epoch
 
 MODEL_PREFIX = 'trainer.strategies.'
+FINAL_DF_COLS = [
+    'scrip', 'strategy', 'date', 'signal', 'time', 'open', 'target', 'day_close', 'entry_price', 'target_candle',
+    'max_mtm', 'target_pnl'
+]
 logger = logging.getLogger(__name__)
 pd.set_option('display.max_columns', None)
 pd.set_option('display.max_rows', None)
@@ -220,7 +224,7 @@ class FastBT:
 
         stats = self.calc_stats(final_df, count, scrip, strategy)
         func_logger.debug(f"Evaluated: {scrip} & {strategy} with {len(final_df)} trades")
-        return final_df, stats
+        return final_df[FINAL_DF_COLS], stats
 
     def run_accuracy(self, params: list[dict]):
         logger.info(f"run_accuracy: Started with {len(params)} scrips")
