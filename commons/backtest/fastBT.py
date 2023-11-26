@@ -8,7 +8,6 @@ from commons.config.reader import cfg
 from commons.consts.consts import IST
 from commons.dataprovider.ScripData import ScripData
 from commons.dataprovider.database import DatabaseEngine
-from commons.loggers.setup_logger import setup_logging
 from commons.utils.Misc import get_bod_epoch
 
 MODEL_PREFIX = 'trainer.strategies.'
@@ -272,7 +271,9 @@ class FastBT:
 
 
 if __name__ == '__main__':
-    setup_logging()
+    from commons.loggers.setup_logger import setup_logging
+
+    setup_logging("fastBT.log")
 
     f = FastBT()
     params_ = []

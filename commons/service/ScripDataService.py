@@ -6,7 +6,6 @@ from commons.config.reader import cfg
 from commons.consts.consts import Interval
 from commons.dataprovider.ScripData import ScripData
 from commons.dataprovider.database import DatabaseEngine
-from commons.loggers.setup_logger import setup_logging
 
 logger = logging.getLogger(__name__)
 
@@ -43,6 +42,8 @@ class ScripDataService:
 
 
 if __name__ == '__main__':
+    from commons.loggers.setup_logger import setup_logging
+
     setup_logging(log_file_name="sds.log")
 
     ACCT = 'Trader-V2-Pralhad'

@@ -2,7 +2,6 @@ import pandas as pd
 
 from commons.consts.consts import SCRIP_HIST, IST, Interval
 from commons.dataprovider.database import DatabaseEngine
-from commons.loggers.setup_logger import setup_logging
 
 
 class ScripData:
@@ -51,7 +50,9 @@ class ScripData:
 
 
 if __name__ == '__main__':
-    setup_logging()
+    from commons.loggers.setup_logger import setup_logging
+
+    setup_logging("ScripData.log")
     db = DatabaseEngine()
     sd = ScripData(trader_db=db)
     x = sd.get_scrip_data(scrip_name='DUMMY')

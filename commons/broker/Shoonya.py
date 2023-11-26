@@ -17,7 +17,6 @@ from websocket import WebSocketConnectionClosedException
 
 from commons.config.reader import cfg
 from commons.consts.consts import Interval
-from commons.loggers.setup_logger import setup_logging
 from commons.utils.EmailAlert import send_email
 from commons.utils.Misc import get_bod_epoch
 
@@ -410,7 +409,9 @@ class Shoonya:
 
 
 if __name__ == '__main__':
-    setup_logging()
+    from commons.loggers.setup_logger import setup_logging
+
+    setup_logging("Shoonya.log")
 
     MOCK = True
 
