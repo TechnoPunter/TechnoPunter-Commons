@@ -72,6 +72,18 @@ class TestShoonya(unittest.TestCase):
         expected_df = pd.DataFrame(ob_expected)
         pd.testing.assert_frame_equal(result_df, expected_df)
 
+    def test_get_order_type_order_update(self):
+        ob_data = read_file("bo/bo-entry-order-update.json", ret_type="JSON")
+        ob_expected = read_file("bo/expected/bo-order-update-order-type.json", ret_type="JSON")
+        results = []
+        for message in ob_data:
+            results.append(self.s.get_order_type_order_update(message=message))
+
+        self.assertEqual(len(results), len(ob_data))
+        result_df = pd.DataFrame(results)
+        expected_df = pd.DataFrame(ob_expected)
+        pd.testing.assert_frame_equal(result_df, expected_df)
+
 
 if __name__ == "__main__":
     unittest.main()

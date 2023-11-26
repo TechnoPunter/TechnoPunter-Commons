@@ -430,6 +430,26 @@ class Shoonya:
             result.append(order)
         return result
 
+    @staticmethod
+    def get_order_type_order_update(message):
+        if message.get('pcode', 'X') == 'C':
+            message['tp_order_num'] = -1
+            message['tp_order_type'] = 'CNC'
+        else:
+            num = message.get('remarks', 'NA').split(":")[-1]
+            message['tp_order_num'] = num
+            if message.get('pcode', 'X') == 'B':
+                if message.get('snonum', 'NA') == 'NA':
+                    # Entry message
+                    message['tp_order_type'] = 'ENTRY_LEG'
+                elif message.get('snoordt', -1) == "1":
+                    message['tp_order_type'] = 'SL_LEG'
+                elif message.get('snoordt', -1) == "0":
+                    message['tp_order_type'] = 'TARGET_LEG'
+            else:
+                message['tp_order_type'] = message.get('remarks', 'NA').split(":")[0]
+        return message
+
 
 if __name__ == '__main__':
     from commons.loggers.setup_logger import setup_logging
