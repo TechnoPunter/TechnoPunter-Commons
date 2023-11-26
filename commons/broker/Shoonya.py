@@ -13,6 +13,7 @@ from NorenRestApiPy.NorenApi import NorenApi
 
 from commons.config.reader import cfg
 from commons.loggers.setup_logger import setup_logging
+from commons.utils.EmailAlert import send_email
 from commons.utils.Misc import get_bod_epoch
 
 logger = logging.getLogger(__name__)
@@ -42,10 +43,15 @@ class Shoonya:
 
     def __init__(self, acct):
         self.acct = acct
+        self.creds = cfg['shoonya']
         self.api_login()
+        self.__generate_reminders()
+        self.symbols = self.__load_symbol_tokens()
+
+    @staticmethod
+    def __load_symbol_tokens():
         zip_file_name = 'NSE_symbols.zip'
         token_file_name = 'NSE_symbols.txt'
-
         # extracting zipfile from URL
         with urlopen(SYMBOL_MASTER) as response, open(zip_file_name, 'wb') as out_file:
             shutil.copyfileobj(response, out_file)
@@ -54,12 +60,17 @@ class Shoonya:
             command = 'unzip -o ' + zip_file_name
             subprocess.call(command, shell=True)
 
-        # deleting the zipfile from the directory
+        # deleting the files
         os.remove(zip_file_name)
+        os.remove(token_file_name)
 
         # loading data from the file
-        self.symbols = pd.read_csv(token_file_name)
-        os.remove(token_file_name)
+        return pd.read_csv(token_file_name)
+
+    def __generate_reminders(self):
+        if self.creds.get('expiry_date', datetime.date.today()) <= datetime.date.today():
+            send_email(body=f"Shoonya password expired for {self.acct} on {self.creds['expiry_date']}!!!",
+                       subject="ERROR: Password Change Needed")
 
     def __get_token(self, scrip):
         logger.debug(f"Getting token for {scrip}")
@@ -67,8 +78,7 @@ class Shoonya:
         return str(self.symbols.loc[self.symbols.TradingSymbol == scrip]['Token'].iloc[0])
 
     def api_login(self):
-        creds = cfg['shoonya']
-        cred = creds[self.acct]
+        cred = self.creds[self.acct]
         logger.debug(f"api_login: About to call api.login with {cred}")
         resp = self.api.login(userid=cred['user'],
                               password=cred['pwd'],
