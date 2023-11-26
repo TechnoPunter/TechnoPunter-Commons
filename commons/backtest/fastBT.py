@@ -1,6 +1,5 @@
 import logging
 import os
-from multiprocessing import Pool
 
 import numpy as np
 import pandas as pd
@@ -62,9 +61,12 @@ class FastBT:
     trader_db: DatabaseEngine
     sd: ScripData
 
-    def __init__(self):
-        self.trader_db = DatabaseEngine()
-        self.sd = ScripData()
+    def __init__(self, trader_db: DatabaseEngine = None):
+        if trader_db is None:
+            self.trader_db = DatabaseEngine()
+        else:
+            self.trader_db = trader_db
+        self.sd = ScripData(trader_db=trader_db)
 
     def prep_data(self, scrip, strategy, raw_pred_df: pd.DataFrame):
         logger.info(f"Entering Prep data for {scrip} with {len(raw_pred_df)} predictions")
