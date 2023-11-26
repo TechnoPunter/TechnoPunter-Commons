@@ -28,6 +28,7 @@ VALID_ORDER_STATUS = ['OPEN', 'TRIGGER_PENDING', 'COMPLETE', 'CANCELED']
 SCRIP_MAP = {'BAJAJ_AUTO-EQ': 'BAJAJ-AUTO-EQ', 'M_M-EQ': 'M&M-EQ'}
 REST_TIMEOUT = 10
 MAX_WORKERS = cfg.get('max-workers', 5)
+BO_PROD_TYPE = 'B'
 
 
 def get_order_type(message):
@@ -327,6 +328,19 @@ class Shoonya:
         logger.debug(f"api_cancel_order: Resp from api.cancel_order {resp} for {order_no}")
         return resp
 
+    def api_close_bracket_order(self, order_no):
+        logger.debug(f"api_close_bracket_order: About to call api.exit_order for {order_no}")
+        if MOCK:
+            logger.debug("api_close_bracket_order: Sending Mock Response")
+            return dict(json.loads('{"request_time": "09:15:01 01-01-2023", "stat": "Ok", "result": "1234"}'))
+        resp = self.api.exit_order(order_no, BO_PROD_TYPE)
+        if resp is None:
+            logger.error(f"api_close_bracket_order: Retrying! for {order_no}")
+            self.api_login()
+            resp = self.api.exit_order(order_no, BO_PROD_TYPE)
+        logger.debug(f"api_close_bracket_order: Resp from api.exit_order {resp} for {order_no}")
+        return resp
+
     @staticmethod
     def __format_result(recs, time_format="date"):
         df = pd.DataFrame(recs)
@@ -422,7 +436,7 @@ class Shoonya:
             else:
                 num = order.get('remarks', 'NA').split(":")[-1]
                 order['tp_order_num'] = num
-                if order.get('prd', 'X') == 'B':
+                if order.get('prd', 'X') == BO_PROD_TYPE:
                     if order.get('snonum', 'NA') == 'NA':
                         # Entry order
                         order['tp_order_type'] = 'ENTRY_LEG'
@@ -443,7 +457,7 @@ class Shoonya:
         else:
             num = message.get('remarks', 'NA').split(":")[-1]
             message['tp_order_num'] = num
-            if message.get('pcode', 'X') == 'B':
+            if message.get('pcode', 'X') == BO_PROD_TYPE:
                 if message.get('snonum', 'NA') == 'NA':
                     # Entry message
                     message['tp_order_type'] = 'ENTRY_LEG'
