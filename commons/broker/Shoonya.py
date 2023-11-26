@@ -175,7 +175,7 @@ class Shoonya:
     def api_unsubscribe(self, instruments):
         logger.info(f"api_unsubscribe: About to unsubscribe")
         try:
-            self.api.unsubscribe(instruments)
+            self.api.unsubscribe(instruments, feed_type=FeedType.SNAPQUOTE)
         except WebSocketConnectionClosedException:
             pass
 
