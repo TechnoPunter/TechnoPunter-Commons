@@ -1,9 +1,10 @@
+import json
 import logging
 import os
 import unittest
 
+import pandas as pd
 import pytest
-
 
 if os.path.exists('/var/www/TechnoPunter-Commons'):
     REPO_PATH = '/var/www/TechnoPunter-Commons/'
@@ -13,11 +14,22 @@ else:
 os.environ['RESOURCE_PATH'] = os.path.join(REPO_PATH, 'resources/config')
 os.environ['GENERATED_PATH'] = os.path.join(REPO_PATH, 'dummy')
 
+TEST_RESOURCE_DIR = os.path.join(REPO_PATH, 'resources/test')
+
 logger = logging.getLogger(__name__)
 from commons.broker.Shoonya import Shoonya
-from commons.dataprovider.filereader import get_tick_data
 
 ACCT = 'Trader-V2-Pralhad'
+
+
+def read_file(name, ret_type: str = "DF"):
+    res_file_path = os.path.join(TEST_RESOURCE_DIR, name)
+    with open(res_file_path, 'r') as file:
+        result = file.read()
+        if ret_type == "DF":
+            return pd.DataFrame(json.loads(result))
+        else:
+            return json.loads(result)
 
 
 class TestShoonya(unittest.TestCase):
@@ -48,6 +60,17 @@ class TestShoonya(unittest.TestCase):
     def test_get_tick_data(self):
         res = self.s.get_tick_data(self.scrip, num_days=100)
         self.assertIsNotNone(res)
+
+    def test_get_order_type_order_book(self):
+        ob_data = read_file("bo/order-book-cob.json", ret_type="JSON")
+        ob_expected = read_file("bo/expected/order-book-cob-order-type.json", ret_type="JSON")
+        result = self.s.get_order_type_order_book(order_book=ob_data)
+
+        self.assertEqual(len(result), len(ob_data))
+        self.assertIsNotNone(result)
+        result_df = pd.DataFrame(result)
+        expected_df = pd.DataFrame(ob_expected)
+        pd.testing.assert_frame_equal(result_df, expected_df)
 
 
 if __name__ == "__main__":

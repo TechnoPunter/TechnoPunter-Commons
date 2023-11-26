@@ -407,6 +407,29 @@ class Shoonya:
 
         return results
 
+    @staticmethod
+    def get_order_type_order_book(order_book):
+        result = []
+        for order in order_book:
+            if order.get('prd', 'X') == 'C':
+                order['tp_order_num'] = -1
+                order['tp_order_type'] = 'CNC'
+            else:
+                num = order.get('remarks', 'NA').split(":")[-1]
+                order['tp_order_num'] = num
+                if order.get('prd', 'X') == 'B':
+                    if order.get('snonum', 'NA') == 'NA':
+                        # Entry order
+                        order['tp_order_type'] = 'ENTRY_LEG'
+                    elif order.get('snoordt', -1) == "1":
+                        order['tp_order_type'] = 'SL_LEG'
+                    elif order.get('snoordt', -1) == "0":
+                        order['tp_order_type'] = 'TARGET_LEG'
+                else:
+                    order['tp_order_type'] = order.get('remarks', 'NA').split(":")[0]
+            result.append(order)
+        return result
+
 
 if __name__ == '__main__':
     from commons.loggers.setup_logger import setup_logging
