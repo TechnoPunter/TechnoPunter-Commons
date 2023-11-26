@@ -41,12 +41,12 @@ class ScripData:
         self.trader_db.bulk_insert(SCRIP_HIST, df)
         return "Ok"
 
-    def get_base_data(self, scrip_name: str):
-        df = self.get_scrip_data(scrip_name=scrip_name, time_frame=Interval.in_daily)
+    def get_base_data(self, scrip_name: str, from_date: str = '1900-01-01'):
+        df = self.get_scrip_data(scrip_name=scrip_name, time_frame=Interval.in_daily, from_date=from_date)
         return df[["time", "open", "high", "low", "close"]]
 
-    def get_tick_data(self, scrip_name: str):
-        df = self.get_scrip_data(scrip_name=scrip_name, time_frame=Interval.in_1_minute)
+    def get_tick_data(self, scrip_name: str, from_date: str = '1900-01-01'):
+        df = self.get_scrip_data(scrip_name=scrip_name, time_frame=Interval.in_1_minute, from_date=from_date)
         return df[["time", "open", "high", "low", "close"]]
 
 

@@ -86,7 +86,8 @@ class FastBT:
         raw_pred_df.dropna(subset=['date'], inplace=True)
 
         # Get 1-Min data (tick data) and join with raw_pred_df
-        tick_data = self.sd.get_tick_data(scrip)
+        start_date = raw_pred_df.date.min()
+        tick_data = self.sd.get_tick_data(scrip, from_date=start_date)
         merged_df = pd.merge(tick_data, raw_pred_df, how='left', left_on='time', right_on='time')
         merged_df['datetime'] = pd.to_datetime(merged_df['time'], unit='s', utc=True)
         merged_df['datetime'] = merged_df['datetime'].dt.tz_convert(IST)
@@ -94,7 +95,7 @@ class FastBT:
         merged_df.set_index('datetime', inplace=True)
 
         # Get the Daily data (base data) and join with merged DF this is to get the closing price for the day
-        base_data = self.sd.get_base_data(scrip)
+        base_data = self.sd.get_base_data(scrip, from_date=start_date)
         base_data = base_data[['time', 'close']]
         base_data.rename(columns={"close": "day_close"}, inplace=True)
         merged_df = pd.merge(merged_df, base_data, how='left', left_on='time', right_on='time')
