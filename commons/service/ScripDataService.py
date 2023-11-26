@@ -36,7 +36,7 @@ class ScripDataService:
         # Get both tick & base data for all scrips for resp no. of days
         prices = self.s.get_prices_data(scrip_names=scrip_names, opts=opts, base_num_days=base_num_days,
                                         tick_num_days=tick_num_days)
-        logger.info(f"Retried data for {len(prices)} scrip, tf combinations")
+        logger.info(f"Retrieved data for {len(prices)} scrip, tf combinations")
         for scrip_name, interval, df in prices:
             logger.debug(f"Storing data for: {scrip_name} @ TF: {interval.value}")
             self.sd.save_scrip_data(data=df, scrip_name=scrip_name, time_frame=interval)
