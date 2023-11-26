@@ -84,12 +84,12 @@ class TestScripData(unittest.TestCase):
 
     def test_record_load(self):
         data = pd.DataFrame(self.rec1)
-        res = self.sd.load_scrip_data(data=data, scrip_name=self.dummy_scrip, time_frame=Interval.in_1_minute)
+        res = self.sd.save_scrip_data(data=data, scrip_name=self.dummy_scrip, time_frame=Interval.in_1_minute)
         self.assertIsNotNone(res)
 
     def test_record_get(self):
         data = pd.DataFrame(self.rec1)
-        self.sd.load_scrip_data(data=data, scrip_name=self.dummy_scrip, time_frame=Interval.in_1_minute)
+        self.sd.save_scrip_data(data=data, scrip_name=self.dummy_scrip, time_frame=Interval.in_1_minute)
 
         data.loc[:, 'scrip'] = self.dummy_scrip
         data.loc[:, 'time_frame'] = Interval.in_1_minute.value
@@ -101,7 +101,7 @@ class TestScripData(unittest.TestCase):
 
     def test_get_base_data(self):
         data = pd.DataFrame(self.rec3)
-        self.sd.load_scrip_data(data=data, scrip_name=self.dummy_scrip, time_frame=Interval.in_daily)
+        self.sd.save_scrip_data(data=data, scrip_name=self.dummy_scrip, time_frame=Interval.in_daily)
 
         res = self.sd.get_base_data(self.dummy_scrip)
         self.assertGreaterEqual(2, len(res))
@@ -109,7 +109,7 @@ class TestScripData(unittest.TestCase):
 
     def test_get_tick_data(self):
         data = pd.DataFrame(self.rec4)
-        self.sd.load_scrip_data(data=data, scrip_name=self.dummy_scrip, time_frame=Interval.in_1_minute)
+        self.sd.save_scrip_data(data=data, scrip_name=self.dummy_scrip, time_frame=Interval.in_1_minute)
 
         res = self.sd.get_tick_data(self.dummy_scrip)
         self.assertGreaterEqual(2, len(res))

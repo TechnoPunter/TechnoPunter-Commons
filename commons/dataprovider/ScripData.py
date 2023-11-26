@@ -2,13 +2,17 @@ import pandas as pd
 
 from commons.consts.consts import SCRIP_HIST, IST, Interval
 from commons.dataprovider.database import DatabaseEngine
+from commons.loggers.setup_logger import setup_logging
 
 
 class ScripData:
     trader_db: DatabaseEngine
 
-    def __init__(self):
-        self.trader_db = DatabaseEngine()
+    def __init__(self, trader_db: DatabaseEngine = None):
+        if trader_db is None:
+            self.trader_db = DatabaseEngine()
+        else:
+            self.trader_db = trader_db
 
     def get_scrip_data(self, scrip_name: str, time_frame: Interval = Interval.in_1_minute,
                        from_date: str = '1900-01-01'):
@@ -18,7 +22,7 @@ class ScripData:
             predicate += f",m.{SCRIP_HIST}.date  >= '{from_date}'"
         return self.trader_db.query_df(SCRIP_HIST, predicate)
 
-    def load_scrip_data(self, data: pd.DataFrame, scrip_name: str, time_frame: Interval = Interval.in_1_minute):
+    def save_scrip_data(self, data: pd.DataFrame, scrip_name: str, time_frame: Interval = Interval.in_1_minute):
         df = data.copy()
         from_epoch = str(df.time.min())
         predicate = f"m.{SCRIP_HIST}.scrip == '{scrip_name}'"
@@ -47,7 +51,9 @@ class ScripData:
 
 
 if __name__ == '__main__':
-    sd = ScripData()
+    setup_logging()
+    db = DatabaseEngine()
+    sd = ScripData(trader_db=db)
     x = sd.get_scrip_data(scrip_name='DUMMY')
     print(x)
 
@@ -55,10 +61,10 @@ if __name__ == '__main__':
 
     scrip = 'NSE_RELIANCE'
     df_ = get_base_data(scrip)
-    x = sd.load_scrip_data(data=df_, scrip_name=scrip, time_frame=Interval.in_daily)
+    x = sd.save_scrip_data(data=df_, scrip_name=scrip, time_frame=Interval.in_daily)
 
     df_ = get_tick_data(scrip)
-    y = sd.load_scrip_data(data=df_, scrip_name=scrip, time_frame=Interval.in_1_minute)
+    y = sd.save_scrip_data(data=df_, scrip_name=scrip, time_frame=Interval.in_1_minute)
 
     ret = sd.get_base_data(scrip)
     print(ret)

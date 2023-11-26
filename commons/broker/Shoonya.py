@@ -5,7 +5,6 @@ import os
 import shutil
 import signal
 import subprocess
-import urllib
 from urllib.request import urlopen
 
 import pandas as pd
@@ -13,6 +12,7 @@ import pyotp
 from NorenRestApiPy.NorenApi import NorenApi
 
 from commons.config.reader import cfg
+from commons.loggers.setup_logger import setup_logging
 from commons.utils.Misc import get_bod_epoch
 
 logger = logging.getLogger(__name__)
@@ -228,8 +228,10 @@ class Shoonya:
         df = pd.DataFrame(recs)
         df.rename(columns={"into": "open", "inth": "high", "intl": "low", "intc": "close"}, inplace=True)
         if time_format == "date":
+            # Daily data comes with 00:00:00 time
             df['time'] = df.ssboe.apply(lambda r: get_bod_epoch(str(datetime.datetime.fromtimestamp(int(r)).date())))
         else:
+            # Time Series data comes with UTC aware timestamps
             df.rename(columns={"time": "old_time", "ssboe": "time"}, inplace=True)
         df.sort_values(by=['time'], inplace=True)
         return df[["time", "open", "high", "low", "close"]]
@@ -288,11 +290,17 @@ class Shoonya:
 
 
 if __name__ == '__main__':
+    setup_logging()
+
     MOCK = True
-    s = Shoonya(acct='Trader-V2-Pralhad')
+
+    ACCT = 'Trader-V2-Pralhad'
+
+    s = Shoonya(acct=ACCT)
     ob = s.api_get_order_book()
     print(ob)
-    scrip = 'NSE_M_M'
-    # scrip = 'NSE_BAJAJ_AUTO'
-    x = s.get_base_data(scrip)
+    # scrip_ = 'NSE_M_M'
+    # scrip_ = 'NSE_BAJAJ_AUTO'
+    scrip_ = 'NSE_ONGC'
+    x = s.get_base_data(scrip_)
     print(x)
