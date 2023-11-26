@@ -43,7 +43,7 @@ class Shoonya:
 
     def __init__(self, acct):
         self.acct = acct
-        self.creds = cfg['shoonya']
+        self.creds = cfg['shoonya'][self.acct]
         self.api_login()
         self.__generate_reminders()
         self.symbols = self.__load_symbol_tokens()
@@ -78,7 +78,7 @@ class Shoonya:
         return str(self.symbols.loc[self.symbols.TradingSymbol == scrip]['Token'].iloc[0])
 
     def api_login(self):
-        cred = self.creds[self.acct]
+        cred = self.creds
         logger.debug(f"api_login: About to call api.login with {cred}")
         resp = self.api.login(userid=cred['user'],
                               password=cred['pwd'],
