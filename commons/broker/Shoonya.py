@@ -12,7 +12,8 @@ from urllib.request import urlopen
 import pandas as pd
 import pyotp
 import requests
-from NorenRestApiPy.NorenApi import NorenApi
+from NorenRestApiPy.NorenApi import NorenApi, FeedType
+from websocket import WebSocketConnectionClosedException
 
 from commons.config.reader import cfg
 from commons.consts.consts import Interval
@@ -144,6 +145,39 @@ class Shoonya:
                               imei=cred['imei'])
         logger.debug(f"api_login: Post api.login; Resp: {resp}")
         return resp
+
+    def api_start_websocket(self, socket_open_callback, subscribe_callback, socket_error_callback,
+                            order_update_callback):
+        try:
+            logger.debug(f"api_start_websocket: About to start api.start_websocket")
+            self.api.start_websocket(subscribe_callback=subscribe_callback,
+                                     socket_open_callback=socket_open_callback,
+                                     socket_error_callback=socket_error_callback,
+                                     order_update_callback=order_update_callback
+                                     )
+        except Exception as ex:
+            logger.error(f"api_start_websocket: Exception {ex}")
+            self.api_login()
+            self.api.start_websocket(subscribe_callback=subscribe_callback,
+                                     socket_open_callback=socket_open_callback,
+                                     socket_error_callback=socket_error_callback,
+                                     order_update_callback=order_update_callback
+                                     )
+
+    def api_subscribe(self, instruments):
+        logger.debug(f"api_subscribe: About to start api.subscribe")
+        self.api.subscribe(instruments, feed_type=FeedType.SNAPQUOTE)
+
+    def api_subscribe_orders(self):
+        logger.debug(f"api_subscribe_orders: About to start api.subscribe_orders")
+        self.api.subscribe_orders()
+
+    def api_unsubscribe(self, instruments):
+        logger.info(f"api_unsubscribe: About to unsubscribe")
+        try:
+            self.api.unsubscribe(instruments)
+        except WebSocketConnectionClosedException:
+            pass
 
     def api_get_order_book(self):
         logger.debug(f"api_get_order_book: About to call api.get_order_book")
