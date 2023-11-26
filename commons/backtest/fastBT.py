@@ -197,6 +197,7 @@ class FastBT:
             final_df = valid_df
             final_df.loc[:, 'target_candle'] = float('nan')
 
+        final_df.reset_index(inplace=True)
         merged_df['mtm'] = merged_df.apply(calc_mtm, axis=1)
         mtm_max_df = merged_df.groupby('date').apply(lambda r: r['mtm'].max())
         final_df = pd.merge(final_df, pd.DataFrame(mtm_max_df), how='left', left_index=True, right_index=True)
