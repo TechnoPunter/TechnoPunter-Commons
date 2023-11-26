@@ -245,7 +245,8 @@ class Shoonya:
                         price,
                         trigger_price,
                         retention,
-                        remarks):
+                        remarks,
+                        book_loss_price=0.0, book_profit_price=0.0):
         logger.debug(f"api_place_order: About to call api.place_order with {remarks}")
         if MOCK:
             logger.debug("api_place_order: Sending Mock Response")
@@ -260,7 +261,9 @@ class Shoonya:
                                     price=price,
                                     trigger_price=trigger_price,
                                     retention=retention,
-                                    remarks=remarks
+                                    remarks=remarks,
+                                    bookloss_price=book_loss_price,
+                                    bookprofit_price=book_profit_price
                                     )
         if resp is None:
             logger.error(f"api_place_order: Retrying! for {remarks}")
@@ -275,7 +278,9 @@ class Shoonya:
                                         price=price,
                                         trigger_price=trigger_price,
                                         retention=retention,
-                                        remarks=remarks
+                                        remarks=remarks,
+                                        bookloss_price=book_loss_price,
+                                        bookprofit_price=book_profit_price
                                         )
         logger.debug(f"api_place_order: Resp from api.place_order {resp} with {remarks}")
         return resp
