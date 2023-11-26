@@ -5,13 +5,17 @@ import os
 import shutil
 import signal
 import subprocess
+from concurrent.futures import ThreadPoolExecutor
+from datetime import datetime as dt
 from urllib.request import urlopen
 
 import pandas as pd
 import pyotp
+import requests
 from NorenRestApiPy.NorenApi import NorenApi
 
 from commons.config.reader import cfg
+from commons.consts.consts import Interval
 from commons.loggers.setup_logger import setup_logging
 from commons.utils.EmailAlert import send_email
 from commons.utils.Misc import get_bod_epoch
@@ -22,6 +26,8 @@ MOCK = False
 SYMBOL_MASTER = "https://api.shoonya.com/NSE_symbols.txt.zip"
 VALID_ORDER_STATUS = ['OPEN', 'TRIGGER_PENDING', 'COMPLETE', 'CANCELED']
 SCRIP_MAP = {'BAJAJ_AUTO-EQ': 'BAJAJ-AUTO-EQ', 'M_M-EQ': 'M&M-EQ'}
+REST_TIMEOUT = 10
+MAX_WORKERS = cfg.get('max-workers', 5)
 
 
 def get_order_type(message):
@@ -36,10 +42,58 @@ def alarm_handler(signum, frame):
 signal.signal(signal.SIGALRM, alarm_handler)
 
 
+class LocalNorenApi(NorenApi):
+
+    def get_daily_price_series(self, exchange, tradingsymbol, startdate=None, enddate=None):
+        config = self._NorenApi__service_config
+
+        url = f"{config['host']}{config['routes']['get_daily_price_series']}"
+        logger.info(url)
+
+        # prepare the data
+        if startdate is None:
+            week_ago = datetime.date.today() - datetime.timedelta(days=7)
+            startdate = dt.combine(week_ago, dt.min.time()).timestamp()
+
+        if enddate is None:
+            enddate = dt.now().timestamp()
+
+        values = {
+            "uid": self._NorenApi__username,
+            "sym": '{0}:{1}'.format(exchange, tradingsymbol),
+            "from": str(startdate),
+            "to": str(enddate)
+        }
+
+        payload = 'jData=' + json.dumps(values) + f'&jKey={self._NorenApi__susertoken}'
+        logger.debug(payload)
+
+        headers = {"Content-Type": "application/json; charset=utf-8"}
+        try:
+            res = requests.post(url, data=payload, headers=headers, timeout=REST_TIMEOUT)
+        except TimeoutError:
+            res = requests.post(url, data=payload, headers=headers, timeout=REST_TIMEOUT)
+        logger.debug(res)
+
+        if res.status_code != 200:
+            logger.error(f"Error in get_daily_price_series: {res.status_code}")
+            return None
+
+        if len(res.text) == 0:
+            logger.error(f"Error in get_daily_price_series: Empty response")
+            return None
+
+        res_dict = json.loads(res.text)
+        if not isinstance(res_dict, list):
+            return None
+
+        return res_dict
+
+
 class Shoonya:
     acct: str
-    api = NorenApi(host='https://api.shoonya.com/NorenWClientTP/',
-                   websocket='wss://api.shoonya.com/NorenWSTP/')
+    api = LocalNorenApi(host='https://api.shoonya.com/NorenWClientTP/',
+                        websocket='wss://api.shoonya.com/NorenWSTP/')
 
     def __init__(self, acct):
         self.acct = acct
@@ -255,12 +309,10 @@ class Shoonya:
         # symbol = urllib.parse.quote(symbol)
         start_date = datetime.date.today() - datetime.timedelta(days=num_days)
         result = None
-        signal.alarm(10)
         try:
             result = self.api.get_daily_price_series(exchange, symbol, startdate=get_bod_epoch(str(start_date)))
         except Exception as ex:
             print(ex)
-        signal.alarm(0)
         return result
 
     def get_base_data(self, scrip_name, num_days: int = 800):
@@ -274,7 +326,7 @@ class Shoonya:
             recs.append(json.loads(price))
 
         df = self.__format_result(recs)
-        return df
+        return scrip_name, Interval.in_daily, df
 
     def api_get_time_series(self, scrip_name, num_days: int = 7):
         exchange = scrip_name.split("_")[0]
@@ -298,7 +350,29 @@ class Shoonya:
         print(len(prices))
 
         df = self.__format_result(prices, time_format="datetime")
-        return df
+        return scrip_name, Interval.in_1_minute, df
+
+    def get_prices_data(self, scrip_names: [str], opts: [str] = None, base_num_days: int = 7, tick_num_days: int = 7):
+        """
+        Gets prices data from Shoonya using Threadpool
+        :returns list of [ Scrip name, Interval, OHLC Data ]
+        """
+        if opts is None:
+            opts = ['TICK', 'BASE']
+        results = []
+        executors_list = []
+
+        with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
+            for scrip_name in scrip_names:
+                if 'BASE' in opts:
+                    executors_list.append(executor.submit(self.get_base_data, scrip_name, base_num_days))
+                if 'TICK' in opts:
+                    executors_list.append(executor.submit(self.get_tick_data, scrip_name, tick_num_days))
+
+        for result in executors_list:
+            results.append(result.result())
+
+        return results
 
 
 if __name__ == '__main__':
@@ -316,3 +390,5 @@ if __name__ == '__main__':
     scrip_ = 'NSE_ONGC'
     x = s.get_base_data(scrip_)
     print(x)
+    scrips = ['NSE_ONGC', 'NSE_BANDHANBNK']
+    s.get_prices_data(scrip_names=scrips)

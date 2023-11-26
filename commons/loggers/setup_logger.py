@@ -8,7 +8,7 @@ RESOURCE_PATH_LOC = os.environ.get('RESOURCE_PATH')
 LOGGING_PATH_LOC = os.environ.get('LOG_PATH')
 
 
-def setup_logging(log_file_name: str = "calcV1.log", file_path: str = RESOURCE_PATH_LOC):
+def setup_logging(log_file_name: str = "commons.log", file_path: str = RESOURCE_PATH_LOC):
     try:
         with open(file_path + "/logging-local.yaml", 'r') as child_file:
             config = yaml.safe_load(child_file)
@@ -18,6 +18,7 @@ def setup_logging(log_file_name: str = "calcV1.log", file_path: str = RESOURCE_P
 
     config['handlers']['fileHandler']['filename'] = os.path.join(LOGGING_PATH_LOC, log_file_name)
     logging.config.dictConfig(config)
+
 
 setup_logging()
 
