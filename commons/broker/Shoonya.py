@@ -128,7 +128,7 @@ class Shoonya:
             send_email(body=f"Shoonya password expired for {self.acct} on {self.creds['expiry_date']}!!!",
                        subject="ERROR: Password Change Needed")
 
-    def __get_token(self, scrip):
+    def get_token(self, scrip):
         logger.debug(f"Getting token for {scrip}")
         scrip = SCRIP_MAP.get(scrip, scrip)
         return str(self.symbols.loc[self.symbols.TradingSymbol == scrip]['Token'].iloc[0])
@@ -331,7 +331,7 @@ class Shoonya:
     def api_get_time_series(self, scrip_name, num_days: int = 7):
         exchange = scrip_name.split("_")[0]
         symbol = scrip_name.replace(exchange + "_", "") + "-EQ"
-        token = self.__get_token(symbol)
+        token = self.get_token(symbol)
         start_date = datetime.date.today() - datetime.timedelta(days=num_days)
         result = None
         signal.alarm(30)
