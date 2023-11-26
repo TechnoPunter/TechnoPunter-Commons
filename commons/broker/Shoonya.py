@@ -60,12 +60,14 @@ class Shoonya:
             command = 'unzip -o ' + zip_file_name
             subprocess.call(command, shell=True)
 
+        # loading data from the file
+        data = pd.read_csv(token_file_name)
         # deleting the files
         os.remove(zip_file_name)
         os.remove(token_file_name)
 
         # loading data from the file
-        return pd.read_csv(token_file_name)
+        return data
 
     def __generate_reminders(self):
         if self.creds.get('expiry_date', datetime.date.today()) <= datetime.date.today():
