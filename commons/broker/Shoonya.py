@@ -491,7 +491,7 @@ class Shoonya:
             if order_status == "COMPLETE":
                 updated_message['tp_order_status'] = 'SL-HIT'
             elif order_status == "TRIGGER_PENDING":
-                updated_message['tp_order_status'] = 'OPEN'
+                updated_message['tp_order_status'] = 'TRIGGER_PENDING'
             else:
                 updated_message['tp_order_status'] = 'PENDING'
         elif order_type == 'TARGET_LEG':

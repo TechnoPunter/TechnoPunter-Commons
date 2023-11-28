@@ -104,7 +104,7 @@ class TestShoonya(unittest.TestCase):
             {"idx": 5, "order_status": 'PENDING'},
             {"idx": 6, "order_status": 'PENDING'},
             {"idx": 7, "order_status": 'PENDING'},
-            {"idx": 8, "order_status": 'OPEN'},
+            {"idx": 8, "order_status": 'TRIGGER_PENDING'},
             {"idx": 9, "order_status": 'OPEN'}
         ]
         sl_hit = read_file("order-update/sl-hit-order.json")
