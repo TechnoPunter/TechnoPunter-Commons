@@ -149,20 +149,18 @@ class FastBT:
 
     def get_accuracy(self, param):
 
-        func_logger = logging.getLogger(__name__)
-
         if isinstance(param, dict):
             strategy = param.get('strategy')
             scrip = param.get('scrip')
             raw_pred_df = param.get('raw_pred_df')
-            func_logger.debug(f"Getting dict based results for {scrip} & {strategy}")
+            logger.debug(f"Getting dict based results for {scrip} & {strategy}")
             merged_df, count = self.prep_data(scrip, strategy, raw_pred_df=raw_pred_df)
         else:
             _, rec = param
             df = pd.DataFrame([rec])
             strategy = rec.get('model')
             scrip = rec.get('scrip')
-            func_logger.debug(f"Getting DF based results for {scrip} & {strategy}")
+            logger.debug(f"Getting DF based results for {scrip} & {strategy}")
             trade_time = get_bod_epoch(rec.get('trade_date'))
             df.loc[:, 'time'] = trade_time
             merged_df, count = self.prep_data(scrip, strategy, raw_pred_df=df[['target', 'signal', 'time']])
@@ -221,7 +219,7 @@ class FastBT:
         final_df[cols] = final_df[cols].astype(float).apply(lambda x: np.round(x, decimals=2))
 
         stats = self.calc_stats(final_df, count, scrip, strategy)
-        func_logger.debug(f"Evaluated: {scrip} & {strategy} with {len(final_df)} trades")
+        logger.debug(f"Evaluated: {scrip} & {strategy} with {len(final_df)} trades")
         return final_df[FINAL_DF_COLS], stats
 
     def run_accuracy(self, params: list[dict]):
