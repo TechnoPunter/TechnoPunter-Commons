@@ -483,6 +483,8 @@ class Shoonya:
         if order_type == 'ENTRY_LEG':
             if order_status == "COMPLETE":
                 updated_message['tp_order_status'] = 'ENTERED'
+            elif order_status == "REJECTED":
+                updated_message['tp_order_status'] = 'REJECTED'
             else:
                 updated_message['tp_order_status'] = 'PENDING'
         elif order_type == 'SL_LEG':

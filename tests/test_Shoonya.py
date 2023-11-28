@@ -113,7 +113,9 @@ class TestShoonya(unittest.TestCase):
         target_hit = read_file("order-update/target-hit-order.json")
         result = self.s.get_order_status_order_update(target_hit)
         self.assertEqual(result.get('tp_order_status', 'X'), "TARGET-HIT")
-
+        rejected = read_file("order-update/rejection-order.json")
+        result = self.s.get_order_status_order_update(rejected)
+        self.assertEqual(result.get('tp_order_status', 'X'), "REJECTED")
 
 if __name__ == "__main__":
     unittest.main()
