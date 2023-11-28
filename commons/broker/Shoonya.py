@@ -207,33 +207,7 @@ class Shoonya:
             return "REJECTED", "NA", float(0.0)
         logger.debug(f"api_get_order_hist: Resp from api.single_order_history {resp}")
         ord_hist = pd.DataFrame(resp)
-        rej = ord_hist.loc[ord_hist['status'] == 'REJECTED']
-        if len(rej) > 0:
-            order_status = "REJECTED"
-            reject_reason = ord_hist.loc[ord_hist['status'] == 'REJECTED'].iloc[0]['rejreason']
-            price = float(0.0)
-        else:
-            # Handle the off chance that order is pending
-            order_rec = ord_hist.iloc[0]
-            order_type = get_order_type(order_rec)
-            if (order_rec.status == "PENDING") or (order_type == "ENTRY_LEG" and order_rec.status == "OPEN"):
-                logger.warning(f"Order {order_no} is pending - Retrying")
-                resp = self.api.single_order_history(orderno=order_no)
-                ord_hist = pd.DataFrame(resp)
-            if len(resp) == 0:
-                logger.error(f"api_get_order_hist: Unable to get response from single_order_history")
-                return "REJECTED", "NA", float(0.0)
-            valid = ord_hist.loc[ord_hist.status.isin(VALID_ORDER_STATUS)]
-            if len(valid) > 0:
-                order_status = valid.iloc[0].status
-                reject_reason = "NA"
-                price = float(valid.iloc[0].get('avgprc', 0))
-            else:
-                order_status = "REJECTED"
-                reject_reason = 'NA'
-                price = float(0.0)
-        logger.debug(f"api_get_order_hist: Status: {order_status}, Reason: {reject_reason}")
-        return order_status, reject_reason, price
+        return ord_hist
 
     def api_place_order(self,
                         buy_or_sell,
@@ -501,7 +475,7 @@ class Shoonya:
                 updated_message['tp_order_status'] = 'OPEN'
             else:
                 updated_message['tp_order_status'] = 'PENDING'
-
+        logger.debug(f"Order ID: {updated_message['norenordno']} Updated {updated_message['tp_order_status']}")
         return updated_message
 
     def is_sl_update_rejected(self, order_no):
@@ -512,23 +486,16 @@ class Shoonya:
         if MOCK:
             logger.debug("api_get_order_hist: Sending Mock Response")
             return False, "Mock"
-        resp = self.api.single_order_history(orderno=order_no)
-        if resp is None:
-            logger.error("api_get_order_hist: Retrying!")
-            self.api_login()
-            resp = self.api.single_order_history(orderno=order_no)
-        if len(resp) == 0:
-            logger.error(f"api_get_order_hist: Unable to get response from single_order_history on 2nd attempt")
-            return False, "Get single_order_history Failure"
+        ord_hist = self.api_get_order_hist(order_no)
 
-        logger.debug(f"api_get_order_hist: Resp from api.single_order_history {resp}")
-        ord_hist = pd.DataFrame(resp)
-        rej = ord_hist.loc[ord_hist.get('rpt','X') == 'ReplaceRejected']
+        rej = ord_hist.loc[ord_hist.get('rpt', 'X') == 'ReplaceRejected']
 
         if len(rej) > 0:
             reject_reason = rej.iloc[0]['rejreason']
+            logger.debug(f"Order ID: {order_no} Rejected Reason: {reject_reason}")
             return True, reject_reason
         else:
+            logger.debug(f"Order ID: {order_no} Not Rejected")
             return False, "NA"
 
 
@@ -555,4 +522,3 @@ if __name__ == '__main__':
     print(x, y)
     x, y = s.is_sl_update_rejected('23112800114286')
     print(x, y)
-
