@@ -469,6 +469,39 @@ class Shoonya:
                 message['tp_order_type'] = message.get('remarks', 'NA').split(":")[0]
         return message
 
+    def get_order_status_order_update(self, message):
+        """
+        Expected Updated order if not will call get_order_type_order_update
+        """
+        if message.get('tp_order_type', 'X') == 'X':
+            updated_message = self.get_order_type_order_update(message)
+        else:
+            updated_message = message
+
+        order_type = updated_message.get('tp_order_type')
+        order_status = updated_message.get('status')
+        if order_type == 'ENTRY_LEG':
+            if order_status == "COMPLETE":
+                updated_message['tp_order_status'] = 'ENTERED'
+            else:
+                updated_message['tp_order_status'] = 'PENDING'
+        elif order_type == 'SL_LEG':
+            if order_status == "COMPLETE":
+                updated_message['tp_order_status'] = 'SL-HIT'
+            elif order_status == "TRIGGER_PENDING":
+                updated_message['tp_order_status'] = 'OPEN'
+            else:
+                updated_message['tp_order_status'] = 'PENDING'
+        elif order_type == 'TARGET_LEG':
+            if order_status == "COMPLETE":
+                updated_message['tp_order_status'] = 'TARGET-HIT'
+            elif order_status == "OPEN":
+                updated_message['tp_order_status'] = 'OPEN'
+            else:
+                updated_message['tp_order_status'] = 'PENDING'
+
+        return updated_message
+
 
 if __name__ == '__main__':
     from commons.loggers.setup_logger import setup_logging

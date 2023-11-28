@@ -22,7 +22,7 @@ from commons.broker.Shoonya import Shoonya
 ACCT = 'Trader-V2-Pralhad'
 
 
-def read_file(name, ret_type: str = "DF"):
+def read_file(name, ret_type: str = "JSON"):
     res_file_path = os.path.join(TEST_RESOURCE_DIR, name)
     with open(res_file_path, 'r') as file:
         result = file.read()
@@ -30,6 +30,10 @@ def read_file(name, ret_type: str = "DF"):
             return pd.DataFrame(json.loads(result))
         else:
             return json.loads(result)
+
+
+def read_file_df(name):
+    return read_file(name, ret_type="DF")
 
 
 class TestShoonya(unittest.TestCase):
@@ -62,8 +66,8 @@ class TestShoonya(unittest.TestCase):
         self.assertIsNotNone(res)
 
     def test_get_order_type_order_book(self):
-        ob_data = read_file("bo/order-book-cob.json", ret_type="JSON")
-        ob_expected = read_file("bo/expected/order-book-cob-order-type.json", ret_type="JSON")
+        ob_data = read_file("bo/order-book-cob.json")
+        ob_expected = read_file("bo/expected/order-book-cob-order-type.json")
         result = self.s.get_order_type_order_book(order_book=ob_data)
 
         self.assertEqual(len(result), len(ob_data))
@@ -73,8 +77,8 @@ class TestShoonya(unittest.TestCase):
         pd.testing.assert_frame_equal(result_df, expected_df)
 
     def test_get_order_type_order_update(self):
-        ob_data = read_file("bo/bo-entry-order-update.json", ret_type="JSON")
-        ob_expected = read_file("bo/expected/bo-order-update-order-type.json", ret_type="JSON")
+        ob_data = read_file("bo/bo-entry-order-update.json")
+        ob_expected = read_file("bo/expected/bo-order-update-order-type.json")
         results = []
         for message in ob_data:
             results.append(self.s.get_order_type_order_update(message=message))
@@ -83,6 +87,32 @@ class TestShoonya(unittest.TestCase):
         result_df = pd.DataFrame(results)
         expected_df = pd.DataFrame(ob_expected)
         pd.testing.assert_frame_equal(result_df, expected_df)
+
+    def test_get_order_status_order_update(self):
+        bo_order_updates = read_file("order-update/bo-entry-order-update.json")
+        results = []
+        for idx, order in enumerate(bo_order_updates):
+            curr_result = self.s.get_order_status_order_update(order)
+            results.append({"idx": idx, "order_status": curr_result.get('tp_order_status', 'X')})
+
+        expected_results = [
+            {"idx": 0, "order_status": 'PENDING'},
+            {"idx": 1, "order_status": 'PENDING'},
+            {"idx": 2, "order_status": 'PENDING'},
+            {"idx": 3, "order_status": 'ENTERED'},
+            {"idx": 4, "order_status": 'PENDING'},
+            {"idx": 5, "order_status": 'PENDING'},
+            {"idx": 6, "order_status": 'PENDING'},
+            {"idx": 7, "order_status": 'PENDING'},
+            {"idx": 8, "order_status": 'OPEN'},
+            {"idx": 9, "order_status": 'OPEN'}
+        ]
+        sl_hit = read_file("order-update/sl-hit-order.json")
+        result = self.s.get_order_status_order_update(sl_hit)
+        self.assertEqual(result.get('tp_order_status', 'X'), "SL-HIT")
+        target_hit = read_file("order-update/target-hit-order.json")
+        result = self.s.get_order_status_order_update(target_hit)
+        self.assertEqual(result.get('tp_order_status', 'X'), "TARGET-HIT")
 
 
 if __name__ == "__main__":
