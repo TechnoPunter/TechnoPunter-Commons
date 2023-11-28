@@ -31,6 +31,8 @@ class LogService:
         key_list.append(acct)
         log_key = "_".join(key_list)
         if isinstance(data, pd.DataFrame):
+            date_columns = data.select_dtypes(include=['datetime64']).columns.tolist()
+            data[date_columns] = data[date_columns].astype(str)
             log_data = data.fillna(0).to_dict(orient="records")
         else:
             log_data = data
