@@ -504,6 +504,33 @@ class Shoonya:
 
         return updated_message
 
+    def is_sl_update_rejected(self, order_no):
+        """
+        For the order no. check if SL Limit was breached
+        todo: Write test cases based on actual api response.
+        """
+        if MOCK:
+            logger.debug("api_get_order_hist: Sending Mock Response")
+            return False, "Mock"
+        resp = self.api.single_order_history(orderno=order_no)
+        if resp is None:
+            logger.error("api_get_order_hist: Retrying!")
+            self.api_login()
+            resp = self.api.single_order_history(orderno=order_no)
+        if len(resp) == 0:
+            logger.error(f"api_get_order_hist: Unable to get response from single_order_history on 2nd attempt")
+            return False, "Get single_order_history Failure"
+
+        logger.debug(f"api_get_order_hist: Resp from api.single_order_history {resp}")
+        ord_hist = pd.DataFrame(resp)
+        rej = ord_hist.loc[ord_hist['status'] == 'REJECTED']
+
+        if len(rej) > 0:
+            reject_reason = ord_hist.loc[ord_hist['status'] == 'REJECTED'].iloc[0]['rejreason']
+            return True, reject_reason
+        else:
+            return False, "NA"
+
 
 if __name__ == '__main__':
     from commons.loggers.setup_logger import setup_logging
