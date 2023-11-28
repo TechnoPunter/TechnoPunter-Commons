@@ -117,6 +117,9 @@ class TestShoonya(unittest.TestCase):
         rejected = read_file("order-update/rejection-order.json")
         result = self.s.get_order_status_order_update(rejected)
         self.assertEqual(result.get('tp_order_status', 'X'), "REJECTED")
+        canceled = read_file("order-update/canceled-order.json")
+        result = self.s.get_order_status_order_update(canceled)
+        self.assertEqual(result.get('tp_order_status', 'X'), "CANCELED")
 
     @patch('commons.broker.Shoonya.Shoonya.api.single_order_history')
     def test_is_sl_update_rejected(self, mock_order_hist_api):

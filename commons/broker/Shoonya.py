@@ -459,6 +459,8 @@ class Shoonya:
                 updated_message['tp_order_status'] = 'ENTERED'
             elif order_status == "REJECTED":
                 updated_message['tp_order_status'] = 'REJECTED'
+            elif order_status == "CANCELED":
+                updated_message['tp_order_status'] = 'CANCELED'
             else:
                 updated_message['tp_order_status'] = 'PENDING'
         elif order_type == 'SL_LEG':
@@ -466,6 +468,8 @@ class Shoonya:
                 updated_message['tp_order_status'] = 'SL-HIT'
             elif order_status == "TRIGGER_PENDING":
                 updated_message['tp_order_status'] = 'TRIGGER_PENDING'
+            elif order_status == "CANCELED":
+                updated_message['tp_order_status'] = 'CANCELED'
             else:
                 updated_message['tp_order_status'] = 'PENDING'
         elif order_type == 'TARGET_LEG':
@@ -473,6 +477,8 @@ class Shoonya:
                 updated_message['tp_order_status'] = 'TARGET-HIT'
             elif order_status == "OPEN":
                 updated_message['tp_order_status'] = 'OPEN'
+            elif order_status == "CANCELED":
+                updated_message['tp_order_status'] = 'CANCELED'
             else:
                 updated_message['tp_order_status'] = 'PENDING'
         logger.debug(f"Order ID: {updated_message['norenordno']} Updated {updated_message['tp_order_status']}")
