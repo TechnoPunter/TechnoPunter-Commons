@@ -2,6 +2,7 @@ import json
 import logging
 import os
 import unittest
+from unittest.mock import patch
 
 import pandas as pd
 import pytest
@@ -116,6 +117,16 @@ class TestShoonya(unittest.TestCase):
         rejected = read_file("order-update/rejection-order.json")
         result = self.s.get_order_status_order_update(rejected)
         self.assertEqual(result.get('tp_order_status', 'X'), "REJECTED")
+
+    @patch('commons.broker.Shoonya.Shoonya.api.single_order_history')
+    def test_is_sl_update_rejected(self, mock_order_hist_api):
+        api_resp = read_file(name="order-hist/sl-update-no-rejection-order-hist.json")
+
+        mock_order_hist_api.side_effect = [api_resp]
+        res = self.s.is_sl_update_rejected("X")
+
+        self.assertEqual(res, (False, "NA"))
+
 
 if __name__ == "__main__":
     unittest.main()
