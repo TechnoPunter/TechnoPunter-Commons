@@ -1,3 +1,4 @@
+import datetime
 import logging
 import os
 
@@ -5,7 +6,7 @@ import numpy as np
 import pandas as pd
 
 from commons.config.reader import cfg
-from commons.consts.consts import IST
+from commons.consts.consts import IST, PARAMS_LOG_TYPE
 from commons.dataprovider.ScripData import ScripData
 from commons.dataprovider.database import DatabaseEngine
 from commons.utils.Misc import get_bod_epoch
@@ -70,6 +71,7 @@ class FastBT:
         else:
             self.trader_db = trader_db
         self.sd = ScripData(trader_db=trader_db)
+        self.mode = "BACKTEST"  # "NEXT-CLOSE"
 
     def prep_data(self, scrip, strategy, raw_pred_df: pd.DataFrame):
         logger.info(f"Entering Prep data for {scrip} with {len(raw_pred_df)} predictions")
@@ -98,12 +100,18 @@ class FastBT:
         merged_df.set_index('datetime', inplace=True)
 
         # Get the Daily data (base data) and join with merged DF this is to get the closing price for the day
-        base_data = self.sd.get_base_data(scrip, from_date=start_date)
+        if self.mode == "BACKTEST":
+            base_data = self.sd.get_base_data(scrip, from_date=start_date)
+        else:
+            # Last candle of the day is closing price for the day! However, time of day is 1st candle's epoch
+            base_data = tick_data.iloc[-1:]
+            base_data.loc[:, 'time'] = tick_data.iloc[0]['time']
         base_data = base_data[['time', 'close']]
         base_data.rename(columns={"close": "day_close"}, inplace=True)
         merged_df = pd.merge(merged_df, base_data, how='left', left_on='time', right_on='time')
-        # Remove 1st Row since we don't have closing from T-1
-        merged_df = merged_df.iloc[1:]
+        if self.mode == "BACKTEST":
+            # Remove 1st Row since we don't have closing from T-1
+            merged_df = merged_df.iloc[1:]
         return merged_df, len(raw_pred_df)
 
     def calc_stats(self, final_df, count, scrip, strategy):
@@ -161,7 +169,8 @@ class FastBT:
             strategy = rec.get('model')
             scrip = rec.get('scrip')
             logger.debug(f"Getting DF based results for {scrip} & {strategy}")
-            trade_time = get_bod_epoch(rec.get('trade_date'))
+            trade_date = datetime.datetime.fromtimestamp(int(rec.get('entry_ts')))
+            trade_time = get_bod_epoch(trade_date.strftime('%Y-%m-%d'))
             df.loc[:, 'time'] = trade_time
             merged_df, count = self.prep_data(scrip, strategy, raw_pred_df=df[['target', 'signal', 'time']])
 
@@ -201,7 +210,7 @@ class FastBT:
         final_df.reset_index(inplace=True)
         merged_df['mtm'] = merged_df.apply(calc_mtm, axis=1)
         mtm_max_df = merged_df.groupby('date').apply(lambda r: r['mtm'].max())
-        final_df = pd.merge(final_df, pd.DataFrame(mtm_max_df), how='left', left_index=True, right_index=True)
+        final_df = pd.merge(final_df, pd.DataFrame(mtm_max_df), how='left', left_on="date", right_index=True)
         final_df.rename({0: 'max_mtm'}, axis=1, inplace=True)
 
         # Calc PNL
@@ -224,6 +233,10 @@ class FastBT:
 
     def run_accuracy(self, params: list[dict]):
         logger.info(f"run_accuracy: Started with {len(params)} scrips")
+        self.mode = "BACKTEST"
+        if len(params) == 0:
+            logger.error(f"Unable to proceed since Params is empty")
+            return
         trades = []
         stats = []
         for param in params:
@@ -245,6 +258,10 @@ class FastBT:
 
     def run_cob_accuracy(self, params: pd.DataFrame):
         logger.info(f"run_accuracy: Started with {len(params)} scrips")
+        self.mode = "NEXT-CLOSE"
+        if len(params) == 0:
+            logger.error(f"Unable to proceed since Params is empty")
+            return
         trades = []
         stats = []
         valid_trades = params.loc[params.entry_order_status == 'COMPLETE']
@@ -269,6 +286,7 @@ class FastBT:
 
 if __name__ == '__main__':
     from commons.loggers.setup_logger import setup_logging
+    from commons.service.LogService import LogService
 
     setup_logging("fastBT.log")
 
@@ -284,9 +302,11 @@ if __name__ == '__main__':
     logger.info(f"\n{bt_trades}")
     logger.info(f"\n{bt_stats}")
 
-    params_df = pd.read_json(
-        "/Users/pralhad/Documents/99-src/98-trading/trade-exec-engine/resources/test/cob/cob-params.json")
-    params_df.loc[:, 'trade_date'] = '2023-11-24'
-    bt_trades, bt_stats = f.run_cob_accuracy(params=params_df)
+    acct = 'Trader-V2-Mahi'
+    dt_ = '2023-11-28'
+    db = DatabaseEngine()
+    ls = LogService(db)
+    data = ls.get_log_entry_data(log_type=PARAMS_LOG_TYPE, keys=["COB"], log_date=dt_, acct=acct)
+    bt_trades, bt_stats = f.run_cob_accuracy(params=pd.DataFrame(data))
     logger.info(f"\n{bt_trades}")
     logger.info(f"\n{bt_stats}")

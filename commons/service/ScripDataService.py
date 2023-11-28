@@ -49,5 +49,6 @@ if __name__ == '__main__':
     ACCT = 'Trader-V2-Pralhad'
     sh = Shoonya(ACCT)
     sds = ScripDataService(shoonya=sh)
-    scrip = 'NSE_ONGC'
-    sds.load_scrips_data(cfg['steps']['scrips'], base_num_days=800, tick_num_days=10, opts=["BASE", "TICK"])
+    scrip = 'NSE_BANDHANBNK'
+    # sds.load_scrips_data(cfg['steps']['scrips'], base_num_days=800, tick_num_days=10, opts=["BASE", "TICK"])
+    sds.load_scrips_data([scrip], base_num_days=7, tick_num_days=10, opts=["BASE", "TICK"])
