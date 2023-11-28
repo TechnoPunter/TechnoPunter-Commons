@@ -523,10 +523,10 @@ class Shoonya:
 
         logger.debug(f"api_get_order_hist: Resp from api.single_order_history {resp}")
         ord_hist = pd.DataFrame(resp)
-        rej = ord_hist.loc[ord_hist['status'] == 'REJECTED']
+        rej = ord_hist.loc[ord_hist.get('rpt','X') == 'ReplaceRejected']
 
         if len(rej) > 0:
-            reject_reason = ord_hist.loc[ord_hist['status'] == 'REJECTED'].iloc[0]['rejreason']
+            reject_reason = rej.iloc[0]['rejreason']
             return True, reject_reason
         else:
             return False, "NA"
@@ -537,9 +537,9 @@ if __name__ == '__main__':
 
     setup_logging("Shoonya.log")
 
-    MOCK = True
+    MOCK = False
 
-    ACCT = 'Trader-V2-Pralhad'
+    ACCT = 'Trader-V2-Mahi'
 
     s = Shoonya(acct=ACCT)
     ob = s.api_get_order_book()
@@ -550,4 +550,9 @@ if __name__ == '__main__':
     x = s.get_base_data(scrip_)
     print(x)
     scrips = ['NSE_ONGC', 'NSE_BANDHANBNK']
-    s.get_prices_data(scrip_names=scrips)
+    # s.get_prices_data(scrip_names=scrips)
+    x, y = s.is_sl_update_rejected('23112800061266')
+    print(x, y)
+    x, y = s.is_sl_update_rejected('23112800114286')
+    print(x, y)
+

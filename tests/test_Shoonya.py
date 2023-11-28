@@ -127,6 +127,13 @@ class TestShoonya(unittest.TestCase):
 
         self.assertEqual(res, (False, "NA"))
 
+        api_resp = read_file(name="order-hist/sl-update-rejection-order-hist.json")
+
+        mock_order_hist_api.side_effect = [api_resp]
+        res = self.s.is_sl_update_rejected("X")
+
+        self.assertEqual(res, (True, '16448: undefined error code !!'))
+
 
 if __name__ == "__main__":
     unittest.main()
