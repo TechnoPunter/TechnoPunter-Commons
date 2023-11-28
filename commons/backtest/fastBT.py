@@ -149,7 +149,6 @@ class FastBT:
 
     def get_accuracy(self, param):
 
-        setup_logging()
         func_logger = logging.getLogger(__name__)
 
         if isinstance(param, dict):
