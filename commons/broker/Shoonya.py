@@ -202,6 +202,9 @@ class Shoonya:
             logger.error("api_get_order_hist: Retrying!")
             self.api_login()
             resp = self.api.single_order_history(orderno=order_no)
+        if resp is None:
+            logger.error("api_get_order_hist: Failed on retry!")
+            return None
         if len(resp) == 0:
             logger.error(f"api_get_order_hist: Unable to get response from single_order_history")
             return "REJECTED", "NA", float(0.0)
@@ -493,6 +496,10 @@ class Shoonya:
             logger.debug("api_get_order_hist: Sending Mock Response")
             return False, "Mock"
         ord_hist = self.api_get_order_hist(order_no)
+
+        if ord_hist is None:
+            logger.error(f"Unable to file Order history for {order_no}")
+            return False, "NA"
 
         if len(ord_hist) == 0:
             logger.error(f"Unable to file Order history for {order_no}")
