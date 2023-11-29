@@ -494,6 +494,10 @@ class Shoonya:
             return False, "Mock"
         ord_hist = self.api_get_order_hist(order_no)
 
+        if len(ord_hist) == 0:
+            logger.error(f"Unable to file Order history for {order_no}")
+            return False, "NA"
+
         rej = ord_hist.loc[ord_hist.get('rpt', 'X') == 'ReplaceRejected']
 
         if len(rej) > 0:
