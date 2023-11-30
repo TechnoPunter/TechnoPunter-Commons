@@ -104,21 +104,23 @@ class Shoonya:
         self.symbols = self.__load_symbol_tokens()
 
     def __load_symbol_tokens(self):
-        zip_file_name = "_".join([self.acct, 'NSE_symbols.zip'])
-        token_file_name = "_".join([self.acct, 'NSE_symbols.txt'])
+        os.makedirs(self.acct, exist_ok=True)
+        zip_file_name = os.path.join(self.acct, 'NSE_symbols.zip')
+        token_file_name = os.path.join(self.acct, 'NSE_symbols.txt')
         # extracting zipfile from URL
         with urlopen(SYMBOL_MASTER) as response, open(zip_file_name, 'wb') as out_file:
             shutil.copyfileobj(response, out_file)
 
             # extracting required file from zipfile
-            command = 'unzip -o ' + zip_file_name
+            command = f'unzip -d {self.acct} -o ' + zip_file_name
             subprocess.call(command, shell=True)
 
         # loading data from the file
         data = pd.read_csv(token_file_name)
-        # deleting the files
+        # deleting the files & directory
         os.remove(zip_file_name)
         os.remove(token_file_name)
+        os.removedirs(self.acct)
 
         # loading data from the file
         return data
