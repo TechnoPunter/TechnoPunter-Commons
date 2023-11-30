@@ -47,14 +47,14 @@ class ScripData:
         predicate += f",m.{SCRIP_HIST}.time_frame == '{time_frame.value}'"
         predicate += f",m.{SCRIP_HIST}.time  >= '{from_epoch}'"
         predicate += f",m.{SCRIP_HIST}.hour  == 9"
-        predicate += f",m.{SCRIP_HIST}.time  <= 14"
+        predicate += f",m.{SCRIP_HIST}.minute  <= 14"
         self.trader_db.delete_recs(SCRIP_HIST, predicate=predicate)
 
         predicate = f"m.{SCRIP_HIST}.scrip == '{scrip_name}'"
         predicate += f",m.{SCRIP_HIST}.time_frame == '{time_frame.value}'"
         predicate += f",m.{SCRIP_HIST}.time  >= '{from_epoch}'"
         predicate += f",m.{SCRIP_HIST}.hour  == 15"
-        predicate += f",m.{SCRIP_HIST}.time  >= 30"
+        predicate += f",m.{SCRIP_HIST}.minute  >= 30"
         self.trader_db.delete_recs(SCRIP_HIST, predicate=predicate)
 
         return "Ok"
