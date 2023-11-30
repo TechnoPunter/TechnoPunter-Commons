@@ -20,6 +20,7 @@ logger = logging.getLogger(__name__)
 pd.set_option('display.max_columns', None)
 pd.set_option('display.max_rows', None)
 pd.set_option('display.width', None)
+pd.options.mode.chained_assignment = None
 
 
 def get_target_pnl(row):
@@ -266,7 +267,7 @@ class FastBT:
             return
         trades = []
         stats = []
-        valid_trades = params.loc[params.entry_order_status == 'COMPLETE']
+        valid_trades = params.loc[params.entry_order_status == 'ENTERED']
         logger.info(f"No. of valid trades: {len(valid_trades)}")
         for param in valid_trades.iterrows():
             trade, stat = self.get_accuracy(param)
