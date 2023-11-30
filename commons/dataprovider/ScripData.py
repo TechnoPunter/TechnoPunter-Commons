@@ -31,6 +31,10 @@ class ScripData:
 
         df['date'] = pd.to_datetime(df['time'].astype(int), unit='s', utc=True)
         df['date'] = df['date'].dt.tz_convert(IST)
+
+        df['hour'] = df['date'].dt.hour
+        df['minute'] = df['date'].dt.minute
+
         df['date'] = df['date'].dt.date
         df['date'] = df['date'].astype(str)
 
@@ -38,6 +42,21 @@ class ScripData:
         df.loc[:, 'time_frame'] = time_frame.value
 
         self.trader_db.bulk_insert(SCRIP_HIST, df)
+
+        predicate = f"m.{SCRIP_HIST}.scrip == '{scrip_name}'"
+        predicate += f",m.{SCRIP_HIST}.time_frame == '{time_frame.value}'"
+        predicate += f",m.{SCRIP_HIST}.time  >= '{from_epoch}'"
+        predicate += f",m.{SCRIP_HIST}.hour  == 9"
+        predicate += f",m.{SCRIP_HIST}.time  <= 14"
+        self.trader_db.delete_recs(SCRIP_HIST, predicate=predicate)
+
+        predicate = f"m.{SCRIP_HIST}.scrip == '{scrip_name}'"
+        predicate += f",m.{SCRIP_HIST}.time_frame == '{time_frame.value}'"
+        predicate += f",m.{SCRIP_HIST}.time  >= '{from_epoch}'"
+        predicate += f",m.{SCRIP_HIST}.hour  == 15"
+        predicate += f",m.{SCRIP_HIST}.time  >= 30"
+        self.trader_db.delete_recs(SCRIP_HIST, predicate=predicate)
+
         return "Ok"
 
     def get_base_data(self, scrip_name: str, from_date: str = '1900-01-01'):

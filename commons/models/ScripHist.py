@@ -17,3 +17,5 @@ class ScripHist(Base):
     high = Column(Numeric)
     low = Column(Numeric)
     close = Column(Numeric)
+    hour = Column(Integer)
+    minute = Column(Integer)
