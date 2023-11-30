@@ -103,10 +103,9 @@ class Shoonya:
         self.__generate_reminders()
         self.symbols = self.__load_symbol_tokens()
 
-    @staticmethod
-    def __load_symbol_tokens():
-        zip_file_name = 'NSE_symbols.zip'
-        token_file_name = 'NSE_symbols.txt'
+    def __load_symbol_tokens(self):
+        zip_file_name = "_".join([self.acct, 'NSE_symbols.zip'])
+        token_file_name = "_".join([self.acct, 'NSE_symbols.txt'])
         # extracting zipfile from URL
         with urlopen(SYMBOL_MASTER) as response, open(zip_file_name, 'wb') as out_file:
             shutil.copyfileobj(response, out_file)

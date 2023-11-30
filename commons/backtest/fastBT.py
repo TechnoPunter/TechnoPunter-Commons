@@ -157,6 +157,8 @@ class FastBT:
 
     def get_accuracy(self, param):
 
+        logger.info(f"Entered get_accuracy with {type(param)}")
+
         if isinstance(param, dict):
             strategy = param.get('strategy')
             scrip = param.get('scrip')
@@ -265,6 +267,7 @@ class FastBT:
         trades = []
         stats = []
         valid_trades = params.loc[params.entry_order_status == 'COMPLETE']
+        logger.info(f"No. of valid trades: {len(valid_trades)}")
         for param in valid_trades.iterrows():
             trade, stat = self.get_accuracy(param)
             trades.append(trade)
@@ -277,10 +280,14 @@ class FastBT:
         #         stats.append(stat)
         # except Exception as ex:
         #     logger.error(f"Error in Multi Processing {ex}")
-        result_trades = pd.concat(trades)
-        result_trades.sort_values(by=['date', 'scrip'], inplace=True)
-        result_stats = pd.DataFrame(stats)
-        result_stats.dropna(subset=['scrip'], inplace=True)
+        if len(trades) > 0:
+            result_trades = pd.concat(trades)
+            result_trades.sort_values(by=['date', 'scrip'], inplace=True)
+            result_stats = pd.DataFrame(stats)
+            result_stats.dropna(subset=['scrip'], inplace=True)
+        else:
+            result_trades = pd.DataFrame()
+            result_stats = pd.DataFrame()
         return result_trades, result_stats
 
 
