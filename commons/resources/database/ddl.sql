@@ -181,3 +181,26 @@ CREATE TABLE public.scrip_hist(
 	close float4 NULL,
 	CONSTRAINT scrip_hist_pk PRIMARY KEY (scrip, timestamp, time_frame)
 );
+
+
+
+CREATE TABLE public.trades_mtm(
+	trade_mtm_id int8 NOT NULL GENERATED ALWAYS AS IDENTITY( INCREMENT BY 1 MINVALUE 1 MAXVALUE 2147483647 START 1 CACHE 1 NO CYCLE),
+	scrip varchar NOT NULL,
+	strategy varchar NOT NULL,
+	date varchar NOT NULL,
+	datetime varchar NOT NULL,
+	signal int4 NOT NULL,
+	time int4 NOT NULL,
+	open float4 NULL,
+	high float4 NULL,
+	low float4 NULL,
+	close float4 NULL,
+	target float4 NULL,
+	target_met varchar NULL,
+	day_close float4 NULL,
+	entry_price float4 NULL,
+	mtm float4 NULL,
+	mtm_pct float4 NULL,
+	CONSTRAINT trades_mtm_pk PRIMARY KEY (trade_mtm_id)
+);
