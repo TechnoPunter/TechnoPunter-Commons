@@ -1,5 +1,6 @@
 import datetime
 import enum
+import os
 
 import pytz
 
@@ -32,6 +33,13 @@ BT_TRADE_LOG_TYPE = "BacktestTrades"
 # Models
 LOG_STORE_MODEL = "LogStore"
 SCRIP_HIST = "ScripHist"
+TRADES_MTM_TABLE = "TradesMTM"
+
+# Trainer Paths
+SUMMARY_PATH = os.path.join(_cfg['generated'], 'summary')
+ACCURACY_FILE = os.path.join(SUMMARY_PATH, 'Portfolio-Accuracy.csv')
+TRADES_FILE = os.path.join(SUMMARY_PATH, 'Portfolio-Trades.csv')
+TRADES_MTM_FILE = os.path.join(SUMMARY_PATH, 'Portfolio-Trades-MTM.csv')
 
 
 class Interval(enum.Enum):
