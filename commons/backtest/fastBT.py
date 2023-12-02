@@ -16,6 +16,10 @@ FINAL_DF_COLS = [
     'scrip', 'strategy', 'date', 'signal', 'time', 'open', 'target', 'day_close', 'entry_price', 'target_candle',
     'max_mtm', 'target_pnl'
 ]
+MTM_DF_COLS = [
+    'scrip', 'strategy', 'date', 'datetime', 'signal', 'time', 'open', 'high', 'low', 'close',
+    'target', 'target_met', 'day_close', 'entry_price', 'mtm', 'mtm_pct'
+]
 logger = logging.getLogger(__name__)
 pd.set_option('display.max_columns', None)
 pd.set_option('display.max_rows', None)
@@ -57,9 +61,16 @@ def target_met(row):
 
 def calc_mtm(row):
     if row['curr_signal'] == 1:
-        return row['high'] - row['entry_price']
+        mtm = row['high'] - row['entry_price']
+        mtm_pct = mtm * 100 / row['entry_price']
     elif row['curr_signal'] == -1:
-        return row['entry_price'] - row['low']
+        mtm = row['entry_price'] - row['low']
+        mtm_pct = mtm * 100 / row['entry_price']
+    else:
+        mtm, mtm_pct = 0, 0
+    row['mtm'] = mtm
+    row['mtm_pct'] = mtm_pct
+    return row
 
 
 class FastBT:
@@ -98,7 +109,7 @@ class FastBT:
         merged_df['datetime'] = pd.to_datetime(merged_df['time'], unit='s', utc=True)
         merged_df['datetime'] = merged_df['datetime'].dt.tz_convert(IST)
         merged_df['date'] = merged_df['datetime'].dt.date
-        merged_df.set_index('datetime', inplace=True)
+        # merged_df.set_index('datetime', inplace=True)
 
         # Get the Daily data (base data) and join with merged DF this is to get the closing price for the day
         if self.mode == "BACKTEST":
@@ -194,11 +205,12 @@ class FastBT:
         merged_df['entry_price'] = merged_df['entry_price'].ffill()
         merged_df['curr_target'] = merged_df['target'].ffill()
         merged_df['curr_signal'] = merged_df['signal'].ffill()
+        merged_df['day_close'] = merged_df['day_close'].ffill()
 
         # Check for signals & events i.e.
         # Target Met - 1st row
         # SL Hit
-        # Max Profit : MTM + Max
+        # Max Profit : MTM + Max;
         # Max Loss
 
         merged_df['target_met'] = merged_df.apply(target_met, axis=1)
@@ -211,7 +223,7 @@ class FastBT:
             final_df.loc[:, 'target_candle'] = float('nan')
 
         final_df.reset_index(inplace=True)
-        merged_df['mtm'] = merged_df.apply(calc_mtm, axis=1)
+        merged_df = merged_df.apply(calc_mtm, axis=1)
         mtm_max_df = merged_df.groupby('date').apply(lambda r: r['mtm'].max())
         final_df = pd.merge(final_df, pd.DataFrame(mtm_max_df), how='left', left_on="date", right_index=True)
         final_df.rename({0: 'max_mtm'}, axis=1, inplace=True)
@@ -230,9 +242,18 @@ class FastBT:
         cols = ["open", "day_close", "target", "entry_price", "max_mtm", "target_pnl"]
         final_df[cols] = final_df[cols].astype(float).apply(lambda x: np.round(x, decimals=2))
 
+        # Pred MTM data to write to CSV
+        merged_df['strategy'] = MODEL_PREFIX + strategy
+        merged_df['scrip'] = scrip
+        merged_df.drop(columns=['target', 'signal', 'is_valid'], axis=1, inplace=True)
+        merged_df.rename(columns={'curr_target': 'target', 'curr_signal': 'signal'}, inplace=True)
+
+        cols = ["open", "high", "low", "close", "day_close", "target", "entry_price", "mtm", "mtm_pct"]
+        merged_df[cols] = merged_df[cols].astype(float).apply(lambda x: np.round(x, decimals=2))
+
         stats = self.calc_stats(final_df, count, scrip, strategy)
         logger.debug(f"Evaluated: {scrip} & {strategy} with {len(final_df)} trades")
-        return final_df[FINAL_DF_COLS], stats
+        return final_df[FINAL_DF_COLS], stats, merged_df[MTM_DF_COLS]
 
     def run_accuracy(self, params: list[dict]):
         logger.info(f"run_accuracy: Started with {len(params)} scrips")
@@ -242,10 +263,12 @@ class FastBT:
             return
         trades = []
         stats = []
+        mtm_dfs = []
         for param in params:
-            trade, stat = self.get_accuracy(param)
+            trade, stat, mtm_df = self.get_accuracy(param)
             trades.append(trade)
             stats.append(stat)
+            mtm_dfs.append(mtm_df)
         # try:
         #     pool = Pool(processes=8)
         #     result_set = pool.imap(self.get_accuracy, params)
@@ -255,9 +278,10 @@ class FastBT:
         # except Exception as ex:
         #     logger.error(f"Error in Multi Processing {ex}")
         result_trades = pd.concat(trades)
+        result_mtm = pd.concat(mtm_dfs)
         result_trades.sort_values(by=['date', 'scrip'], inplace=True)
         result_stats = pd.DataFrame(stats)
-        return result_trades, result_stats
+        return result_trades, result_stats, result_mtm
 
     def run_cob_accuracy(self, params: pd.DataFrame):
         logger.info(f"run_accuracy: Started with {len(params)} scrips")
@@ -267,12 +291,14 @@ class FastBT:
             return
         trades = []
         stats = []
+        mtm_dfs = []
         valid_trades = params.loc[params.entry_order_status == 'ENTERED']
         logger.info(f"No. of valid trades: {len(valid_trades)}")
         for param in valid_trades.iterrows():
-            trade, stat = self.get_accuracy(param)
+            trade, stat, mtm_df = self.get_accuracy(param)
             trades.append(trade)
             stats.append(stat)
+            mtm_dfs.append(mtm_df)
         # try:
         #     pool = Pool()
         #     result_set = pool.imap(self.get_accuracy, valid_trades.iterrows())
@@ -286,10 +312,12 @@ class FastBT:
             result_trades.sort_values(by=['date', 'scrip'], inplace=True)
             result_stats = pd.DataFrame(stats)
             result_stats.dropna(subset=['scrip'], inplace=True)
+            result_mtm = pd.concat(mtm_dfs)
         else:
             result_trades = pd.DataFrame()
             result_stats = pd.DataFrame()
-        return result_trades, result_stats
+            result_mtm = pd.DataFrame()
+        return result_trades, result_stats, result_mtm
 
 
 if __name__ == '__main__':
@@ -306,15 +334,17 @@ if __name__ == '__main__':
             raw_pred_df_ = pd.read_csv(file)
             params_.append({"scrip": scrip_, "strategy": strategy_, "raw_pred_df": raw_pred_df_})
 
-    bt_trades, bt_stats = f.run_accuracy(params_)
+    bt_trades, bt_stats, bt_mtm = f.run_accuracy(params_)
     logger.info(f"\n{bt_trades}")
     logger.info(f"\n{bt_stats}")
+    logger.info(f"\n{bt_mtm}")
 
     acct = 'Trader-V2-Mahi'
     dt_ = '2023-11-28'
     db = DatabaseEngine()
     ls = LogService(db)
     data = ls.get_log_entry_data(log_type=PARAMS_LOG_TYPE, keys=["COB"], log_date=dt_, acct=acct)
-    bt_trades, bt_stats = f.run_cob_accuracy(params=pd.DataFrame(data))
+    bt_trades, bt_stats, bt_mtm = f.run_cob_accuracy(params=pd.DataFrame(data))
     logger.info(f"\n{bt_trades}")
     logger.info(f"\n{bt_stats}")
+    logger.info(f"\n{bt_mtm}")
