@@ -130,7 +130,10 @@ class DatabaseEngine:
     def delete_recs(self, table: str, predicate: str = None):
         m = next((m for m in self.tables if m.__name__ == self.package_name + "." + table), None)
         assert m is not None, f"Invalid table name {table}"
-        delete = eval(f"self.session.query(m.{table}).filter({predicate}).delete(synchronize_session=False)")
+        if predicate is None:
+            delete = eval(f"self.session.query(m.{table}).delete(synchronize_session=False)")
+        else:
+            delete = eval(f"self.session.query(m.{table}).filter({predicate}).delete(synchronize_session=False)")
         self.session.commit()
         return delete
 
