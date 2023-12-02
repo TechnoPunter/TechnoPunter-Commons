@@ -28,6 +28,7 @@ VALID_ORDER_STATUS = ['OPEN', 'TRIGGER_PENDING', 'COMPLETE', 'CANCELED']
 SCRIP_MAP = {'BAJAJ_AUTO-EQ': 'BAJAJ-AUTO-EQ', 'M_M-EQ': 'M&M-EQ'}
 REST_TIMEOUT = 10
 MAX_WORKERS = cfg.get('max-workers', 5)
+BO_PROD_TYPE = 'B'
 
 
 def get_order_type(message):
@@ -102,23 +103,24 @@ class Shoonya:
         self.__generate_reminders()
         self.symbols = self.__load_symbol_tokens()
 
-    @staticmethod
-    def __load_symbol_tokens():
-        zip_file_name = 'NSE_symbols.zip'
-        token_file_name = 'NSE_symbols.txt'
+    def __load_symbol_tokens(self):
+        os.makedirs(self.acct, exist_ok=True)
+        zip_file_name = os.path.join(self.acct, 'NSE_symbols.zip')
+        token_file_name = os.path.join(self.acct, 'NSE_symbols.txt')
         # extracting zipfile from URL
         with urlopen(SYMBOL_MASTER) as response, open(zip_file_name, 'wb') as out_file:
             shutil.copyfileobj(response, out_file)
 
             # extracting required file from zipfile
-            command = 'unzip -o ' + zip_file_name
+            command = f'unzip -d {self.acct} -o ' + zip_file_name
             subprocess.call(command, shell=True)
 
         # loading data from the file
         data = pd.read_csv(token_file_name)
-        # deleting the files
+        # deleting the files & directory
         os.remove(zip_file_name)
         os.remove(token_file_name)
+        os.removedirs(self.acct)
 
         # loading data from the file
         return data
@@ -201,38 +203,15 @@ class Shoonya:
             logger.error("api_get_order_hist: Retrying!")
             self.api_login()
             resp = self.api.single_order_history(orderno=order_no)
+        if resp is None:
+            logger.error("api_get_order_hist: Failed on retry!")
+            return None
         if len(resp) == 0:
             logger.error(f"api_get_order_hist: Unable to get response from single_order_history")
             return "REJECTED", "NA", float(0.0)
         logger.debug(f"api_get_order_hist: Resp from api.single_order_history {resp}")
         ord_hist = pd.DataFrame(resp)
-        rej = ord_hist.loc[ord_hist['status'] == 'REJECTED']
-        if len(rej) > 0:
-            order_status = "REJECTED"
-            reject_reason = ord_hist.loc[ord_hist['status'] == 'REJECTED'].iloc[0]['rejreason']
-            price = float(0.0)
-        else:
-            # Handle the off chance that order is pending
-            order_rec = ord_hist.iloc[0]
-            order_type = get_order_type(order_rec)
-            if (order_rec.status == "PENDING") or (order_type == "ENTRY_LEG" and order_rec.status == "OPEN"):
-                logger.warning(f"Order {order_no} is pending - Retrying")
-                resp = self.api.single_order_history(orderno=order_no)
-                ord_hist = pd.DataFrame(resp)
-            if len(resp) == 0:
-                logger.error(f"api_get_order_hist: Unable to get response from single_order_history")
-                return "REJECTED", "NA", float(0.0)
-            valid = ord_hist.loc[ord_hist.status.isin(VALID_ORDER_STATUS)]
-            if len(valid) > 0:
-                order_status = valid.iloc[0].status
-                reject_reason = "NA"
-                price = float(valid.iloc[0].get('avgprc', 0))
-            else:
-                order_status = "REJECTED"
-                reject_reason = 'NA'
-                price = float(0.0)
-        logger.debug(f"api_get_order_hist: Status: {order_status}, Reason: {reject_reason}")
-        return order_status, reject_reason, price
+        return ord_hist
 
     def api_place_order(self,
                         buy_or_sell,
@@ -245,7 +224,8 @@ class Shoonya:
                         price,
                         trigger_price,
                         retention,
-                        remarks):
+                        remarks,
+                        book_loss_price=0.0, book_profit_price=0.0):
         logger.debug(f"api_place_order: About to call api.place_order with {remarks}")
         if MOCK:
             logger.debug("api_place_order: Sending Mock Response")
@@ -260,7 +240,9 @@ class Shoonya:
                                     price=price,
                                     trigger_price=trigger_price,
                                     retention=retention,
-                                    remarks=remarks
+                                    remarks=remarks,
+                                    bookloss_price=book_loss_price,
+                                    bookprofit_price=book_profit_price
                                     )
         if resp is None:
             logger.error(f"api_place_order: Retrying! for {remarks}")
@@ -275,7 +257,9 @@ class Shoonya:
                                         price=price,
                                         trigger_price=trigger_price,
                                         retention=retention,
-                                        remarks=remarks
+                                        remarks=remarks,
+                                        bookloss_price=book_loss_price,
+                                        bookprofit_price=book_profit_price
                                         )
         logger.debug(f"api_place_order: Resp from api.place_order {resp} with {remarks}")
         return resp
@@ -320,6 +304,19 @@ class Shoonya:
             self.api_login()
             resp = self.api.cancel_order(order_no)
         logger.debug(f"api_cancel_order: Resp from api.cancel_order {resp} for {order_no}")
+        return resp
+
+    def api_close_bracket_order(self, order_no):
+        logger.debug(f"api_close_bracket_order: About to call api.exit_order for {order_no}")
+        if MOCK:
+            logger.debug("api_close_bracket_order: Sending Mock Response")
+            return dict(json.loads('{"request_time": "09:15:01 01-01-2023", "stat": "Ok", "result": "1234"}'))
+        resp = self.api.exit_order(order_no, BO_PROD_TYPE)
+        if resp is None:
+            logger.error(f"api_close_bracket_order: Retrying! for {order_no}")
+            self.api_login()
+            resp = self.api.exit_order(order_no, BO_PROD_TYPE)
+        logger.debug(f"api_close_bracket_order: Resp from api.exit_order {resp} for {order_no}")
         return resp
 
     @staticmethod
@@ -407,15 +404,127 @@ class Shoonya:
 
         return results
 
+    @staticmethod
+    def get_order_type_order_book(order_book):
+        result = []
+        for order in order_book:
+            if order.get('prd', 'X') == 'C':
+                order['tp_order_num'] = -1
+                order['tp_order_type'] = 'CNC'
+            else:
+                num = order.get('remarks', 'NA').split(":")[-1]
+                order['tp_order_num'] = num
+                if order.get('prd', 'X') == BO_PROD_TYPE:
+                    if order.get('snonum', 'NA') == 'NA':
+                        # Entry order
+                        order['tp_order_type'] = 'ENTRY_LEG'
+                    elif order.get('snoordt', -1) == "1":
+                        order['tp_order_type'] = 'SL_LEG'
+                    elif order.get('snoordt', -1) == "0":
+                        order['tp_order_type'] = 'TARGET_LEG'
+                else:
+                    order['tp_order_type'] = order.get('remarks', 'NA').split(":")[0]
+            result.append(order)
+        return result
+
+    @staticmethod
+    def get_order_type_order_update(message):
+        if message.get('pcode', 'X') == 'C':
+            message['tp_order_num'] = -1
+            message['tp_order_type'] = 'CNC'
+        else:
+            num = message.get('remarks', 'NA').split(":")[-1]
+            message['tp_order_num'] = num
+            if message.get('pcode', 'X') == BO_PROD_TYPE:
+                if message.get('snonum', 'NA') == 'NA':
+                    # Entry message
+                    message['tp_order_type'] = 'ENTRY_LEG'
+                elif message.get('snoordt', -1) == "1":
+                    message['tp_order_type'] = 'SL_LEG'
+                elif message.get('snoordt', -1) == "0":
+                    message['tp_order_type'] = 'TARGET_LEG'
+            else:
+                message['tp_order_type'] = message.get('remarks', 'NA').split(":")[0]
+        return message
+
+    def get_order_status_order_update(self, message):
+        """
+        Expected Updated order if not will call get_order_type_order_update
+        """
+        if message.get('tp_order_type', 'X') == 'X':
+            updated_message = self.get_order_type_order_update(message)
+        else:
+            updated_message = message
+
+        order_type = updated_message.get('tp_order_type')
+        order_status = updated_message.get('status')
+        if order_type == 'ENTRY_LEG':
+            if order_status == "COMPLETE":
+                updated_message['tp_order_status'] = 'ENTERED'
+            elif order_status == "REJECTED":
+                updated_message['tp_order_status'] = 'REJECTED'
+            elif order_status == "CANCELED":
+                updated_message['tp_order_status'] = 'CANCELED'
+            else:
+                updated_message['tp_order_status'] = 'PENDING'
+        elif order_type == 'SL_LEG':
+            if order_status == "COMPLETE":
+                updated_message['tp_order_status'] = 'SL-HIT'
+            elif order_status == "TRIGGER_PENDING":
+                updated_message['tp_order_status'] = 'TRIGGER_PENDING'
+            elif order_status == "CANCELED":
+                updated_message['tp_order_status'] = 'CANCELED'
+            else:
+                updated_message['tp_order_status'] = 'PENDING'
+        elif order_type == 'TARGET_LEG':
+            if order_status == "COMPLETE":
+                updated_message['tp_order_status'] = 'TARGET-HIT'
+            elif order_status == "OPEN":
+                updated_message['tp_order_status'] = 'OPEN'
+            elif order_status == "CANCELED":
+                updated_message['tp_order_status'] = 'CANCELED'
+            else:
+                updated_message['tp_order_status'] = 'PENDING'
+        logger.debug(f"Order ID: {updated_message['norenordno']} Updated {updated_message['tp_order_status']}")
+        return updated_message
+
+    def is_sl_update_rejected(self, order_no):
+        """
+        For the order no. check if SL Limit was breached
+        todo: Write test cases based on actual api response.
+        """
+        if MOCK:
+            logger.debug("api_get_order_hist: Sending Mock Response")
+            return False, "Mock"
+        ord_hist = self.api_get_order_hist(order_no)
+
+        if ord_hist is None:
+            logger.error(f"Unable to file Order history for {order_no}")
+            return False, "NA"
+
+        if len(ord_hist) == 0:
+            logger.error(f"Unable to file Order history for {order_no}")
+            return False, "NA"
+
+        rej = ord_hist.loc[ord_hist.get('rpt', 'X') == 'ReplaceRejected']
+
+        if len(rej) > 0:
+            reject_reason = rej.iloc[0]['rejreason']
+            logger.debug(f"Order ID: {order_no} Rejected Reason: {reject_reason}")
+            return True, reject_reason
+        else:
+            logger.debug(f"Order ID: {order_no} Not Rejected")
+            return False, "NA"
+
 
 if __name__ == '__main__':
     from commons.loggers.setup_logger import setup_logging
 
     setup_logging("Shoonya.log")
 
-    MOCK = True
+    MOCK = False
 
-    ACCT = 'Trader-V2-Pralhad'
+    ACCT = 'Trader-V2-Mahi'
 
     s = Shoonya(acct=ACCT)
     ob = s.api_get_order_book()
@@ -426,4 +535,8 @@ if __name__ == '__main__':
     x = s.get_base_data(scrip_)
     print(x)
     scrips = ['NSE_ONGC', 'NSE_BANDHANBNK']
-    s.get_prices_data(scrip_names=scrips)
+    # s.get_prices_data(scrip_names=scrips)
+    x, y = s.is_sl_update_rejected('23112800061266')
+    print(x, y)
+    x, y = s.is_sl_update_rejected('23112800114286')
+    print(x, y)

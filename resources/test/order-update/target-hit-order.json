@@ -1,0 +1,22 @@
+{
+    "t": "om",
+    "norenordno": "23112400485196",
+    "uid": "FA175610",
+    "actid": "FA175610",
+    "exch": "NSE",
+    "tsym": "BANDHANBNK-EQ",
+    "trantype": "B",
+    "qty": "1",
+    "prc": "212.20",
+    "pcode": "B",
+    "remarks": "BO:trainer.strategies.gspcV2:NSE_BANDHANBNK:0",
+    "status": "COMPLETE",
+    "reporttype": "New",
+    "prctyp": "LMT",
+    "ret": "DAY",
+    "exchordid": "1000000023229997",
+    "dscqty": "0",
+    "snonum": "23112400485194",
+    "snoordt": "0",
+    "exch_tm": "24-11-2023 13:55:05"
+  }

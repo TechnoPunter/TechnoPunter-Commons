@@ -2,10 +2,7 @@ import datetime
 import logging
 import time
 
-import pandas as pd
-
-from commons.consts.consts import IST, LOG_STORE_MODEL
-from commons.dataprovider.database import DatabaseEngine
+from commons.consts.consts import IST
 
 logger = logging.getLogger(__name__)
 
@@ -46,7 +43,6 @@ def round_price(price: float, tick: float, scrip: str):
 
 def get_new_sl(order: dict, ltp: float = None):
     """
-
     Args:
         order:{
                 "order_no": 1234,
@@ -57,9 +53,7 @@ def get_new_sl(order: dict, ltp: float = None):
                 "entry_price": 200.05
                 "remarks" : "exec.strategies.gspcV2:NSE_RELIANCE:2023-09..."}
         ltp: 200.55
-
     Returns:
-
     """
     logger.debug(f"__get_new_sl: Update order for {order['scrip']} for SL Order ID: {order['sl_order_id']}")
     direction = 1 if order['signal'] == 1 else -1
@@ -77,33 +71,3 @@ def get_new_sl(order: dict, ltp: float = None):
     else:
         logger.info(f"get_new_sl: Same sl for {order['scrip']} @ {ltp}")
         return "0.0"
-
-
-def log_entry(trader_db: DatabaseEngine, log_type: str, keys: list[str], acct, log_date, data):
-    """
-    Makes entry in LogStore table - Also takes care of NaN in dict
-    {
-        "log_key": {log_type}_{keys},
-        "log_type": log_type,
-        "log_data": JSON,
-        "log_time": get_epoch(0)
-    }
-    """
-    key_list = [log_type] + keys
-    key_list.append(log_date)
-    key_list.append(acct)
-    log_key = "_".join(key_list)
-    if isinstance(data, pd.DataFrame):
-        log_data = data.fillna(0).to_dict(orient="records")
-    else:
-        log_data = data
-    rec = {
-        "log_key": log_key,
-        "log_type": log_type,
-        "log_data": log_data,
-        "log_time": get_epoch("0"),
-        "log_date": log_date,
-        "acct": acct
-    }
-    trader_db.delete_recs(table=LOG_STORE_MODEL, predicate=f"m.{LOG_STORE_MODEL}.log_key == '{log_key}'")
-    trader_db.single_insert(LOG_STORE_MODEL, rec)
