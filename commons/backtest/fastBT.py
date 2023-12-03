@@ -1,4 +1,5 @@
 import logging
+from multiprocessing import Pool
 
 import numpy as np
 import pandas as pd
@@ -72,18 +73,11 @@ def calc_mtm(row):
 
 
 class FastBT:
-    trader_db: DatabaseEngine
-    sd: ScripData
 
-    def __init__(self, trader_db: DatabaseEngine = None):
-        if trader_db is None:
-            self.trader_db = DatabaseEngine()
-        else:
-            self.trader_db = trader_db
-        self.sd = ScripData(trader_db=trader_db)
+    def __init__(self):
         self.mode = "BACKTEST"  # "NEXT-CLOSE"
 
-    def prep_data(self, scrip, strategy, raw_pred_df: pd.DataFrame):
+    def prep_data(self, scrip, strategy, raw_pred_df: pd.DataFrame, sd: ScripData):
         logger.info(f"Entering Prep data for {scrip} with {len(raw_pred_df)} predictions")
 
         if len(raw_pred_df) > 1:
@@ -102,7 +96,7 @@ class FastBT:
 
         # Get 1-Min data (tick data) and join with raw_pred_df
         start_date = raw_pred_df.date.min()
-        tick_data = self.sd.get_tick_data(scrip, from_date=start_date)
+        tick_data = sd.get_tick_data(scrip, from_date=start_date)
         merged_df = pd.merge(tick_data, raw_pred_df, how='left', left_on='time', right_on='time')
         merged_df['datetime'] = pd.to_datetime(merged_df['time'], unit='s', utc=True)
         merged_df['datetime'] = merged_df['datetime'].dt.tz_convert(IST)
@@ -111,7 +105,7 @@ class FastBT:
 
         # Get the Daily data (base data) and join with merged DF this is to get the closing price for the day
         if self.mode == "BACKTEST":
-            base_data = self.sd.get_base_data(scrip, from_date=start_date)
+            base_data = sd.get_base_data(scrip, from_date=start_date)
         else:
             # Last candle of the day is closing price for the day! However, time of day is 1st candle's epoch
             base_data = tick_data.iloc[-1:]
@@ -165,26 +159,14 @@ class FastBT:
             "s_pct": s_pnl * 100 / s_avg_cost, "s_entry_pct": len(s_trades) * 100 / count
         }
 
-    def get_accuracy(self, param):
-
-        logger.info(f"Entered get_accuracy with {type(param)}")
-
-        if isinstance(param, dict):
-            strategy = param.get('strategy')
-            scrip = param.get('scrip')
-            raw_pred_df = param.get('raw_pred_df')
-            logger.info(f"Getting dict based results for {scrip} & {strategy}")
-            merged_df, count = self.prep_data(scrip, strategy, raw_pred_df=raw_pred_df)
-        else:
-            _, rec = param
-            df = pd.DataFrame([rec])
-            strategy = rec.get('model')
-            scrip = rec.get('scrip')
-            logger.info(f"Getting DF based results for {scrip} & {strategy}")
-            trade_date = datetime.datetime.fromtimestamp(int(rec.get('entry_ts')))
-            trade_time = get_bod_epoch(trade_date.strftime('%Y-%m-%d'))
-            df.loc[:, 'time'] = trade_time
-            merged_df, count = self.prep_data(scrip, strategy, raw_pred_df=df[['target', 'signal', 'time']])
+    def get_accuracy(self, accu_params):
+        scrip = accu_params.get('scrip')
+        strategy = accu_params.get('strategy')
+        merged_df = accu_params.get('merged_df')
+        count = accu_params.get('count')
+        # TODO: Logging
+        logger.info(f"Starting get_accuracy for: {scrip} & {strategy}")
+        print(f"Starting get_accuracy for: {scrip} & {strategy}")
 
         # Is the target still available at open i.e. 9:15 candle?
         merged_df['is_valid'] = merged_df.apply(is_valid, axis=1)
@@ -195,7 +177,10 @@ class FastBT:
         # Identify valid days
         valid_df = merged_df.loc[merged_df.is_valid]
         if len(valid_df) == 0:
-            return pd.DataFrame(), {}
+            logger.info(f"Invalid entry in get_accuracy for: {scrip} & {strategy}")
+            print(f"Invalid entry in get_accuracy for: {scrip} & {strategy}")
+            # key, final_df, stats, merged_df
+            return f"{scrip}:{strategy}", pd.DataFrame(), {}, pd.DataFrame()
         valid_df.set_index('date', inplace=True)
         merged_df = merged_df[merged_df.date.isin(valid_df.index)]
 
@@ -250,12 +235,14 @@ class FastBT:
         merged_df[cols] = merged_df[cols].astype(float).apply(lambda x: np.round(x, decimals=2))
 
         stats = self.calc_stats(final_df, count, scrip, strategy)
-        logger.debug(f"Evaluated: {scrip} & {strategy} with {len(final_df)} trades")
+        logger.info(f"Evaluated: {scrip} & {strategy} with {len(final_df)} trades")
+        print(f"Evaluated: {scrip} & {strategy} with {len(final_df)} trades")
         return f"{scrip}:{strategy}", final_df[FINAL_DF_COLS], stats, merged_df[MTM_DF_COLS]
 
     def run_accuracy(self, params: list[dict]):
         logger.info(f"run_accuracy: Started with {len(params)} scrips")
         self.mode = "BACKTEST"
+        sd = ScripData()
 
         if len(params) == 0:
             logger.error(f"Unable to proceed since Params is empty")
@@ -263,19 +250,24 @@ class FastBT:
         trades = []
         stats = []
         mtm = {}
+        accuracy_params = []
         for param in params:
-            key, trade, stat, mtm_df = self.get_accuracy(param)
-            trades.append(trade)
-            stats.append(stat)
-            mtm[key] = mtm_df
-        # try:
-        #     pool = Pool(processes=8)
-        #     result_set = pool.imap(self.get_accuracy, params)
-        #     for trade, stat in result_set:
-        #         trades.append(trade)
-        #         stats.append(stat)
-        # except Exception as ex:
-        #     logger.error(f"Error in Multi Processing {ex}")
+            strategy = param.get('strategy')
+            scrip = param.get('scrip')
+            raw_pred_df = param.get('raw_pred_df')
+            logger.info(f"Getting dict based results for {scrip} & {strategy}")
+            merged_df, count = self.prep_data(scrip, strategy, raw_pred_df=raw_pred_df, sd=sd)
+            accuracy_params.append({"scrip": scrip, "strategy": strategy, "merged_df": merged_df, "count": count})
+        try:
+            logger.info(f"About to start accuracy calc with {len(accuracy_params)} objects")
+            pool = Pool()
+            result_set = pool.imap(self.get_accuracy, accuracy_params)
+            for key, trade, stat, mtm_df in result_set:
+                trades.append(trade)
+                stats.append(stat)
+                mtm[key] = mtm_df
+        except Exception as ex:
+            logger.error(f"Error in Multi Processing {ex}")
         result_trades = pd.concat(trades)
         result_trades.sort_values(by=['date', 'scrip'], inplace=True)
         result_stats = pd.DataFrame(stats)
@@ -284,27 +276,36 @@ class FastBT:
     def run_cob_accuracy(self, params: pd.DataFrame):
         logger.info(f"run_accuracy: Started with {len(params)} scrips")
         self.mode = "NEXT-CLOSE"
+        sd = ScripData()
         if len(params) == 0:
             logger.error(f"Unable to proceed since Params is empty")
             return
         trades = []
         stats = []
         mtm = {}
+        accuracy_params = []
         valid_trades = params.loc[params.entry_order_status == 'ENTERED']
         logger.info(f"No. of valid trades: {len(valid_trades)}")
         for param in valid_trades.iterrows():
-            key, trade, stat, mtm_df = self.get_accuracy(param)
-            trades.append(trade)
-            stats.append(stat)
-            mtm[key] = mtm_df
-        # try:
-        #     pool = Pool()
-        #     result_set = pool.imap(self.get_accuracy, valid_trades.iterrows())
-        #     for trade, stat in result_set:
-        #         trades.append(trade)
-        #         stats.append(stat)
-        # except Exception as ex:
-        #     logger.error(f"Error in Multi Processing {ex}")
+            _, rec = param
+            df = pd.DataFrame([rec])
+            strategy = rec.get('model')
+            scrip = rec.get('scrip')
+            logger.info(f"Getting DF based results for {scrip} & {strategy}")
+            trade_date = datetime.datetime.fromtimestamp(int(rec.get('entry_ts')))
+            trade_time = get_bod_epoch(trade_date.strftime('%Y-%m-%d'))
+            df.loc[:, 'time'] = trade_time
+            merged_df, count = self.prep_data(scrip, strategy, raw_pred_df=df[['target', 'signal', 'time']], sd=sd)
+            accuracy_params.append({"scrip": scrip, "strategy": strategy, "merged_df": merged_df, "count": count})
+        try:
+            pool = Pool()
+            result_set = pool.imap(self.get_accuracy, accuracy_params)
+            for key, trade, stat, mtm_df in result_set:
+                trades.append(trade)
+                stats.append(stat)
+                mtm[key] = mtm_df
+        except Exception as ex:
+            logger.error(f"Error in Multi Processing {ex}")
         if len(trades) > 0:
             result_trades = pd.concat(trades)
             result_trades.sort_values(by=['date', 'scrip'], inplace=True)
@@ -321,9 +322,7 @@ if __name__ == '__main__':
 
     setup_logging("fastBT.log")
 
-    db = DatabaseEngine()
-
-    f = FastBT(trader_db=db)
+    f = FastBT()
     params_ = []
     for scrip_ in cfg['steps']['scrips']:
         for strategy_ in cfg['steps']['strats']:
@@ -337,14 +336,13 @@ if __name__ == '__main__':
     logger.info(f"bt_stats#:{len(bt_stats)}")
     logger.debug(f"bt_stats:\n{bt_stats}")
     logger.info(f"bt_mtm#: {len(bt_mtm)}")
-    # logger.debug(f"bt_mtm:\n{bt_mtm}")
 
-    # exit(0)
+    # exit
 
     from commons.service.LogService import LogService
 
-    acct = 'Trader-V2-Mahi'
-    dt_ = '2023-11-28'
+    acct = 'Trader-V2-Pralhad'
+    dt_ = '2023-12-01'
     db = DatabaseEngine()
     ls = LogService(db)
     data = ls.get_log_entry_data(log_type=PARAMS_LOG_TYPE, keys=["COB"], log_date=dt_, acct=acct)
@@ -354,4 +352,3 @@ if __name__ == '__main__':
     logger.info(f"bt_stats#:{len(bt_stats)}")
     logger.debug(f"bt_stats:\n{bt_stats}")
     logger.info(f"bt_mtm#: {len(bt_mtm)}")
-    # logger.debug(f"bt_mtm:\n{bt_mtm}")
