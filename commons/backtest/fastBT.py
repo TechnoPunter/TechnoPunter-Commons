@@ -253,7 +253,7 @@ class FastBT:
 
         stats = self.calc_stats(final_df, count, scrip, strategy)
         logger.debug(f"Evaluated: {scrip} & {strategy} with {len(final_df)} trades")
-        return f"{scrip}.{strategy}", final_df[FINAL_DF_COLS], stats, merged_df[MTM_DF_COLS]
+        return f"{scrip}:{strategy}", final_df[FINAL_DF_COLS], stats, merged_df[MTM_DF_COLS]
 
     def run_accuracy(self, params: list[dict]):
         logger.info(f"run_accuracy: Started with {len(params)} scrips")
