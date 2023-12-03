@@ -175,14 +175,14 @@ class FastBT:
             strategy = param.get('strategy')
             scrip = param.get('scrip')
             raw_pred_df = param.get('raw_pred_df')
-            logger.debug(f"Getting dict based results for {scrip} & {strategy}")
+            logger.info(f"Getting dict based results for {scrip} & {strategy}")
             merged_df, count = self.prep_data(scrip, strategy, raw_pred_df=raw_pred_df)
         else:
             _, rec = param
             df = pd.DataFrame([rec])
             strategy = rec.get('model')
             scrip = rec.get('scrip')
-            logger.debug(f"Getting DF based results for {scrip} & {strategy}")
+            logger.info(f"Getting DF based results for {scrip} & {strategy}")
             trade_date = datetime.datetime.fromtimestamp(int(rec.get('entry_ts')))
             trade_time = get_bod_epoch(trade_date.strftime('%Y-%m-%d'))
             df.loc[:, 'time'] = trade_time
@@ -253,22 +253,23 @@ class FastBT:
 
         stats = self.calc_stats(final_df, count, scrip, strategy)
         logger.debug(f"Evaluated: {scrip} & {strategy} with {len(final_df)} trades")
-        return final_df[FINAL_DF_COLS], stats, merged_df[MTM_DF_COLS]
+        return f"{scrip}.{strategy}", final_df[FINAL_DF_COLS], stats, merged_df[MTM_DF_COLS]
 
     def run_accuracy(self, params: list[dict]):
         logger.info(f"run_accuracy: Started with {len(params)} scrips")
         self.mode = "BACKTEST"
+
         if len(params) == 0:
             logger.error(f"Unable to proceed since Params is empty")
             return
         trades = []
         stats = []
-        mtm_dfs = []
+        mtm = {}
         for param in params:
-            trade, stat, mtm_df = self.get_accuracy(param)
+            key, trade, stat, mtm_df = self.get_accuracy(param)
             trades.append(trade)
             stats.append(stat)
-            mtm_dfs.append(mtm_df)
+            mtm[key] = mtm_df
         # try:
         #     pool = Pool(processes=8)
         #     result_set = pool.imap(self.get_accuracy, params)
@@ -278,10 +279,9 @@ class FastBT:
         # except Exception as ex:
         #     logger.error(f"Error in Multi Processing {ex}")
         result_trades = pd.concat(trades)
-        result_mtm = pd.concat(mtm_dfs)
         result_trades.sort_values(by=['date', 'scrip'], inplace=True)
         result_stats = pd.DataFrame(stats)
-        return result_trades, result_stats, result_mtm
+        return result_trades, result_stats, mtm
 
     def run_cob_accuracy(self, params: pd.DataFrame):
         logger.info(f"run_accuracy: Started with {len(params)} scrips")
@@ -291,14 +291,14 @@ class FastBT:
             return
         trades = []
         stats = []
-        mtm_dfs = []
+        mtm = {}
         valid_trades = params.loc[params.entry_order_status == 'ENTERED']
         logger.info(f"No. of valid trades: {len(valid_trades)}")
         for param in valid_trades.iterrows():
-            trade, stat, mtm_df = self.get_accuracy(param)
+            key, trade, stat, mtm_df = self.get_accuracy(param)
             trades.append(trade)
             stats.append(stat)
-            mtm_dfs.append(mtm_df)
+            mtm[key] = mtm_df
         # try:
         #     pool = Pool()
         #     result_set = pool.imap(self.get_accuracy, valid_trades.iterrows())
@@ -312,12 +312,10 @@ class FastBT:
             result_trades.sort_values(by=['date', 'scrip'], inplace=True)
             result_stats = pd.DataFrame(stats)
             result_stats.dropna(subset=['scrip'], inplace=True)
-            result_mtm = pd.concat(mtm_dfs)
         else:
             result_trades = pd.DataFrame()
             result_stats = pd.DataFrame()
-            result_mtm = pd.DataFrame()
-        return result_trades, result_stats, result_mtm
+        return result_trades, result_stats, mtm
 
 
 if __name__ == '__main__':
@@ -335,9 +333,9 @@ if __name__ == '__main__':
             params_.append({"scrip": scrip_, "strategy": strategy_, "raw_pred_df": raw_pred_df_})
 
     bt_trades, bt_stats, bt_mtm = f.run_accuracy(params_)
-    logger.info(f"\n{bt_trades}")
-    logger.info(f"\n{bt_stats}")
-    logger.info(f"\n{bt_mtm}")
+    logger.info(f"bt_trades:\n{bt_trades}")
+    logger.info(f"bt_stats:\n{bt_stats}")
+    logger.info(f"bt_mtm:\n{bt_mtm}")
 
     acct = 'Trader-V2-Mahi'
     dt_ = '2023-11-28'
@@ -345,6 +343,6 @@ if __name__ == '__main__':
     ls = LogService(db)
     data = ls.get_log_entry_data(log_type=PARAMS_LOG_TYPE, keys=["COB"], log_date=dt_, acct=acct)
     bt_trades, bt_stats, bt_mtm = f.run_cob_accuracy(params=pd.DataFrame(data))
-    logger.info(f"\n{bt_trades}")
-    logger.info(f"\n{bt_stats}")
-    logger.info(f"\n{bt_mtm}")
+    logger.info(f"bt_trades:\n{bt_trades}")
+    logger.info(f"bt_stats:\n{bt_stats}")
+    logger.info(f"bt_mtm:\n{bt_mtm}")
