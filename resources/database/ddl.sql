@@ -204,3 +204,5 @@ CREATE TABLE public.trades_mtm(
 	mtm_pct float4 NULL,
 	CONSTRAINT trades_mtm_pk PRIMARY KEY (trade_mtm_id)
 );
+
+CREATE INDEX trades_mtm_scrip_idx ON public.trades_mtm (scrip,strategy);
