@@ -318,7 +318,6 @@ class FastBT:
 
 if __name__ == '__main__':
     from commons.loggers.setup_logger import setup_logging
-    from commons.service.LogService import LogService
 
     setup_logging("fastBT.log")
 
@@ -341,6 +340,8 @@ if __name__ == '__main__':
     logger.debug(f"bt_mtm:\n{bt_mtm}")
 
     # exit(0)
+
+    from commons.service.LogService import LogService
 
     acct = 'Trader-V2-Mahi'
     dt_ = '2023-11-28'
