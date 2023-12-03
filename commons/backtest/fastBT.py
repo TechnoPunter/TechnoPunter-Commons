@@ -1,12 +1,10 @@
-import datetime
 import logging
-import os
 
 import numpy as np
 import pandas as pd
 
 from commons.config.reader import cfg
-from commons.consts.consts import IST, PARAMS_LOG_TYPE
+from commons.consts.consts import *
 from commons.dataprovider.ScripData import ScripData
 from commons.dataprovider.database import DatabaseEngine
 from commons.utils.Misc import get_bod_epoch
@@ -324,7 +322,9 @@ if __name__ == '__main__':
 
     setup_logging("fastBT.log")
 
-    f = FastBT()
+    db = DatabaseEngine()
+
+    f = FastBT(trader_db=db)
     params_ = []
     for scrip_ in cfg['steps']['scrips']:
         for strategy_ in cfg['steps']['strats']:
@@ -333,9 +333,14 @@ if __name__ == '__main__':
             params_.append({"scrip": scrip_, "strategy": strategy_, "raw_pred_df": raw_pred_df_})
 
     bt_trades, bt_stats, bt_mtm = f.run_accuracy(params_)
-    logger.info(f"bt_trades:\n{bt_trades}")
-    logger.info(f"bt_stats:\n{bt_stats}")
-    logger.info(f"bt_mtm:\n{bt_mtm}")
+    logger.info(f"bt_trades#: {len(bt_trades)}")
+    logger.debug(f"bt_trades:\n{bt_trades}")
+    logger.info(f"bt_stats#:{len(bt_stats)}")
+    logger.debug(f"bt_stats:\n{bt_stats}")
+    logger.info(f"bt_mtm#: {len(bt_mtm)}")
+    logger.debug(f"bt_mtm:\n{bt_mtm}")
+
+    # exit(0)
 
     acct = 'Trader-V2-Mahi'
     dt_ = '2023-11-28'
@@ -343,6 +348,9 @@ if __name__ == '__main__':
     ls = LogService(db)
     data = ls.get_log_entry_data(log_type=PARAMS_LOG_TYPE, keys=["COB"], log_date=dt_, acct=acct)
     bt_trades, bt_stats, bt_mtm = f.run_cob_accuracy(params=pd.DataFrame(data))
-    logger.info(f"bt_trades:\n{bt_trades}")
-    logger.info(f"bt_stats:\n{bt_stats}")
-    logger.info(f"bt_mtm:\n{bt_mtm}")
+    logger.info(f"bt_trades#: {len(bt_trades)}")
+    logger.debug(f"bt_trades:\n{bt_trades}")
+    logger.info(f"bt_stats#:{len(bt_stats)}")
+    logger.debug(f"bt_stats:\n{bt_stats}")
+    logger.info(f"bt_mtm#: {len(bt_mtm)}")
+    logger.debug(f"bt_mtm:\n{bt_mtm}")
