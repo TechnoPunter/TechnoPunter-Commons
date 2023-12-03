@@ -354,4 +354,4 @@ if __name__ == '__main__':
     logger.info(f"bt_stats#:{len(bt_stats)}")
     logger.debug(f"bt_stats:\n{bt_stats}")
     logger.info(f"bt_mtm#: {len(bt_mtm)}")
-    logger.debug(f"bt_mtm:\n{bt_mtm}")
+    # logger.debug(f"bt_mtm:\n{bt_mtm}")
