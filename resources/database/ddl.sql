@@ -206,3 +206,41 @@ CREATE TABLE public.trades_mtm(
 );
 
 CREATE INDEX trades_mtm_scrip_idx ON public.trades_mtm (scrip,strategy);
+
+
+CREATE TABLE params_hist(
+    params_id int8 NOT NULL GENERATED ALWAYS AS IDENTITY( INCREMENT BY 1 MINVALUE 1 MAXVALUE 2147483647 START 1 CACHE 1 NO CYCLE),
+    acct    varchar,
+    trade_date varchar,
+    close	float4	,
+    signal	int4	,
+    target	float4	,
+    scrip	varchar	,
+    model	varchar	,
+    exchange	varchar	,
+    symbol	varchar	,
+    token	varchar	,
+    target_pct	float4	,
+    sl_pct	float4	,
+    trail_sl_pct	float4	,
+    tick	float4	,
+    type	varchar	,
+    risk	float4	,
+    quantity	int4	,
+    entry_order_id	varchar	,
+    sl_order_id	varchar	,
+    target_order_id	varchar	,
+    entry_order_status	varchar	,
+    sl_order_status	varchar	,
+    target_order_status	varchar	,
+    entry_ts	int4	,
+    sl_ts	int4	,
+    target_ts	int4	,
+    entry_price	float4	,
+    sl_price	float4	,
+    target_price	float4	,
+    strength	float4	,
+    active	varchar	,
+    sl_update_cnt	int4,
+	CONSTRAINT params_hist_pk PRIMARY KEY (params_id)
+);
