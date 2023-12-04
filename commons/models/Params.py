@@ -7,6 +7,8 @@ class Params(Base):
     __tablename__ = 'params_hist'
 
     params_id = Column(Integer, primary_key=True)
+    acct = Column(String)
+    trade_date = Column(String)
     close = Column(Numeric)
     signal = Column(Integer)
     target = Column(Numeric)
