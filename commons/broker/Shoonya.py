@@ -478,7 +478,10 @@ class Shoonya:
                 updated_message['tp_order_status'] = 'PENDING'
         elif order_type == 'TARGET_LEG':
             if order_status == "COMPLETE":
-                updated_message['tp_order_status'] = 'TARGET-HIT'
+                if updated_message.get('prctyp', 'X') == 'MKT':
+                    updated_message['tp_order_status'] = 'COB-CLOSE'
+                else:
+                    updated_message['tp_order_status'] = 'TARGET-HIT'
             elif order_status == "OPEN":
                 updated_message['tp_order_status'] = 'OPEN'
             elif order_status == "CANCELED":
