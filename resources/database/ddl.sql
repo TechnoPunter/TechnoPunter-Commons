@@ -206,3 +206,37 @@ CREATE TABLE public.trades_mtm(
 );
 
 CREATE INDEX trades_mtm_scrip_idx ON public.trades_mtm (scrip,strategy);
+
+
+CREATE TABLE params_hist(
+    close	float4	,
+    signal	int4	,
+    target	float4	,
+    scrip	varchar	,
+    model	varchar	,
+    exchange	varchar	,
+    symbol	varchar	,
+    token	varchar	,
+    target_pct	float4	,
+    sl_pct	float4	,
+    trail_sl_pct	float4	,
+    tick	float4	,
+    type	varchar	,
+    risk	float4	,
+    quantity	int4	,
+    entry_order_id	varchar	,
+    sl_order_id	varchar	,
+    target_order_id	varchar	,
+    entry_order_status	varchar	,
+    sl_order_status	varchar	,
+    target_order_status	varchar	,
+    entry_ts	int4	,
+    sl_ts	int4	,
+    target_ts	int4	,
+    entry_price	float4	,
+    sl_price	float4	,
+    target_price	float4	,
+    strength	float4	,
+    active	varchar	,
+    sl_update_cnt	int4
+);
