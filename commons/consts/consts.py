@@ -34,6 +34,7 @@ BT_MTM_LOG_TYPE = "BacktestTradesMTM"
 # Models
 LOG_STORE_MODEL = "LogStore"
 SCRIP_HIST = "ScripHist"
+PARAMS_HIST = "Params"
 TRADES_MTM_TABLE = "TradesMTM"
 
 # Trainer Paths
