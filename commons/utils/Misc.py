@@ -71,3 +71,22 @@ def get_new_sl(order: dict, ltp: float = None):
     else:
         logger.info(f"get_new_sl: Same sl for {order['scrip']} @ {ltp}")
         return "0.0"
+
+
+def get_updated_sl(rec: dict, low: float, high: float) -> str:
+    logger.debug(f"__get_new_sl: Update order for {rec['scrip']}")
+    direction = 1 if rec['signal'] == 1 else -1
+    ltp = high if direction == 1 else low
+
+    sl = rec['sl']
+    sl_range = rec['sl_range']
+    trail_sl = rec['trail_sl']
+    logger.debug(f"get_new_sl: SL: {sl}; Trail SL: {trail_sl} @ ltp {ltp}")
+    if abs(ltp - rec['sl']) > sl_range + trail_sl:
+        new_sl = ltp - direction * sl_range
+        new_sl = format(round(new_sl / rec['tick']) * rec['tick'], ".2f")
+        logger.debug(f"get_new_sl: Updated sl: {new_sl}")
+        return new_sl
+    else:
+        logger.info(f"get_new_sl: Same sl for {rec['scrip']} @ {ltp}")
+        return "0.0"
