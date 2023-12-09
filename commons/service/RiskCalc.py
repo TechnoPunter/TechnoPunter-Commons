@@ -79,7 +79,7 @@ class RiskCalc:
         :param pred_target:
         :return:
         """
-        key = ":".join([scrip, strategy, signal, acct])
+        key = ":".join([scrip, strategy, str(signal), acct])
         logger.info(f"Key:{key}")
         rec = self.risk_params.get(key, {'reward_factor': self.default_reward_factor,
                                          'risk_reward_ratio': self.default_risk_reward_ratio})
@@ -108,7 +108,7 @@ if __name__ == '__main__':
     rc = RiskCalc()
     _scrip = "X"
     _strategy = "Y"
-    _signal = "1"
+    _signal = 1
     _tick = 0.05
     _acct = "X"
     _entry = 100.00

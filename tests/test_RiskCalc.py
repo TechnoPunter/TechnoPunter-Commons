@@ -47,7 +47,7 @@ class TestRiskCalc(unittest.TestCase):
 
         scrip = "NSE_APOLLOHOSP"
         strategy = "trainer.strategies.gspcV2"
-        signal = "1"
+        signal = 1
         tick = 0.05
         acct = "Trader-V2-Pralhad"
         entry = 100.00
@@ -64,7 +64,7 @@ class TestRiskCalc(unittest.TestCase):
 
         scrip = "NSE_APOLLOHOSP"
         strategy = "trainer.strategies.gspcV2"
-        signal = "1"
+        signal = 1
         tick = 0.05
         acct = "Trader-V2-Mahi"
         entry = 100.00
@@ -81,7 +81,7 @@ class TestRiskCalc(unittest.TestCase):
 
         scrip = "X"
         strategy = "Y"
-        signal = "1"
+        signal = 1
         tick = 0.05
         acct = "X"
         entry = 100.00
