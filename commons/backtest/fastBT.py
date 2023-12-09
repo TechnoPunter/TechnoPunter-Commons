@@ -70,15 +70,26 @@ def sl_hit(row):
 
 
 def calc_mtm(row, low=None, high=None):
-    if low is None:
-        low = row['low']
-    if high is None:
-        high = row['high']
     if row['signal'] == 1:
         mtm = high - row['entry_price']
         mtm_pct = mtm * 100 / row['entry_price']
         return round(mtm, 2), round(mtm_pct, 2)
     elif row['signal'] == -1:
+        mtm = row['entry_price'] - low
+        mtm_pct = mtm * 100 / row['entry_price']
+        return round(mtm, 2), round(mtm_pct, 2)
+    else:
+        return 0.0, 0.0
+
+
+def calc_mtm_df(row):
+    low = row['low']
+    high = row['high']
+    if row.get('curr_signal') == 1:
+        mtm = high - row['entry_price']
+        mtm_pct = mtm * 100 / row['entry_price']
+        return round(mtm, 2), round(mtm_pct, 2)
+    elif row.get('curr_signal') == -1:
         mtm = row['entry_price'] - low
         mtm_pct = mtm * 100 / row['entry_price']
         return round(mtm, 2), round(mtm_pct, 2)
@@ -194,13 +205,13 @@ class FastBT:
         # Is the target still available at open i.e. 9:15 candle? If so mark full day as is_valid.
         # Remove rows which couldn't be evaluated
         merged_df['is_valid'] = merged_df.apply(is_valid, axis=1)
-        merged_df['is_valid'] = merged_df['is_valid'].ffill()
-        merged_df.dropna(subset=['is_valid'], inplace=True)
 
         # If Yes - use that as entry price for the entire day
         merged_df['entry_price'] = merged_df['open'][merged_df['is_valid'] == True]
 
         # Fill the data for the day
+        merged_df['is_valid'] = merged_df['is_valid'].ffill()
+        merged_df.dropna(subset=['is_valid'], inplace=True)
         merged_df['entry_price'] = merged_df['entry_price'].ffill()
         merged_df['curr_signal'] = merged_df['signal'].ffill()
         merged_df['day_close'] = merged_df['day_close'].ffill()
@@ -220,7 +231,8 @@ class FastBT:
         # ]
         mtm_df = mtm_df.assign(scrip=scrip, strategy=strategy)
         mtm_df['target_met'] = mtm_df.apply(target_met, axis=1)
-        mtm_df[['mtm', 'mtm_pct']] = mtm_df.apply(calc_mtm, axis=1, result_type='expand')
+        mtm_df[['mtm', 'mtm_pct']] = mtm_df.apply(calc_mtm_df, axis=1, result_type='expand')
+        mtm_df.reset_index(inplace=True)
 
         trade_idx = -1
         for idx, rec in merged_df.iterrows():

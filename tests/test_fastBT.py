@@ -56,9 +56,11 @@ class TestFastBT(unittest.TestCase):
         """
         merged_df = read_file_df("fastBT/merged_df.csv")
         expected_df = read_file_df("fastBT/expected_trade_df.csv")
+        expected_mtm_df = read_file_df("fastBT/expected_mtm_df.csv")
         param = {"scrip": self.scrip, "strategy": self.strategy, "merged_df": merged_df, "count": self.count}
         key, trades, stat, mtm_df = self.fb.get_accuracy(param)
         pd.testing.assert_frame_equal(self.__format_expected_df(expected_df), trades)
+        pd.testing.assert_frame_equal(expected_mtm_df, mtm_df)
 
     def test_prep_data(self):
         expected_df = read_file_df("fastBT/expected_trade_df.csv")
