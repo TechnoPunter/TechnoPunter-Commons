@@ -3,3 +3,4 @@ include:
   - secrets
   - path-params
   - alert
+  - risk-params
