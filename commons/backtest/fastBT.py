@@ -25,6 +25,8 @@ pd.set_option('display.max_rows', None)
 pd.set_option('display.width', None)
 pd.options.mode.chained_assignment = None
 
+MODE = "SERVER"
+
 
 def get_target_pnl(row):
     if pd.isnull(row['target_candle']):
@@ -258,16 +260,23 @@ class FastBT:
             logger.info(f"Getting dict based results for {scrip} & {strategy}")
             merged_df, count = self.prep_data(scrip, strategy, raw_pred_df=raw_pred_df, sd=sd)
             accuracy_params.append({"scrip": scrip, "strategy": strategy, "merged_df": merged_df, "count": count})
-        try:
-            logger.info(f"About to start accuracy calc with {len(accuracy_params)} objects")
-            pool = Pool()
-            result_set = pool.imap(self.get_accuracy, accuracy_params)
-            for key, trade, stat, mtm_df in result_set:
+        if MODE == "SERVER":
+            try:
+                logger.info(f"About to start accuracy calc with {len(accuracy_params)} objects")
+                pool = Pool()
+                result_set = pool.imap(self.get_accuracy, accuracy_params)
+                for key, trade, stat, mtm_df in result_set:
+                    trades.append(trade)
+                    stats.append(stat)
+                    mtm[key] = mtm_df
+            except Exception as ex:
+                logger.error(f"Error in Multi Processing {ex}")
+        else:
+            for param in accuracy_params:
+                key, trade, stat, mtm_df = self.get_accuracy(param)
                 trades.append(trade)
                 stats.append(stat)
                 mtm[key] = mtm_df
-        except Exception as ex:
-            logger.error(f"Error in Multi Processing {ex}")
         result_trades = pd.concat(trades)
         result_trades.sort_values(by=['date', 'scrip'], inplace=True)
         result_stats = pd.DataFrame(stats)
@@ -297,15 +306,22 @@ class FastBT:
             df.loc[:, 'time'] = trade_time
             merged_df, count = self.prep_data(scrip, strategy, raw_pred_df=df[['target', 'signal', 'time']], sd=sd)
             accuracy_params.append({"scrip": scrip, "strategy": strategy, "merged_df": merged_df, "count": count})
-        try:
-            pool = Pool()
-            result_set = pool.imap(self.get_accuracy, accuracy_params)
-            for key, trade, stat, mtm_df in result_set:
+        if MODE == "SERVER":
+            try:
+                pool = Pool()
+                result_set = pool.imap(self.get_accuracy, accuracy_params)
+                for key, trade, stat, mtm_df in result_set:
+                    trades.append(trade)
+                    stats.append(stat)
+                    mtm[key] = mtm_df
+            except Exception as ex:
+                logger.error(f"Error in Multi Processing {ex}")
+        else:
+            for param in accuracy_params:
+                key, trade, stat, mtm_df = self.get_accuracy(param)
                 trades.append(trade)
                 stats.append(stat)
                 mtm[key] = mtm_df
-        except Exception as ex:
-            logger.error(f"Error in Multi Processing {ex}")
         if len(trades) > 0:
             result_trades = pd.concat(trades)
             result_trades.sort_values(by=['date', 'scrip'], inplace=True)
@@ -322,6 +338,7 @@ if __name__ == '__main__':
 
     setup_logging("fastBT.log")
 
+    MODE = "LOCAL"
     f = FastBT()
     params_ = []
     for scrip_ in cfg['steps']['scrips']:
