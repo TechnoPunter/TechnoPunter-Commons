@@ -7,6 +7,7 @@ from commons.config.reader import cfg
 from commons.consts.consts import *
 from commons.dataprovider.ScripData import ScripData
 from commons.dataprovider.database import DatabaseEngine
+from commons.service.RiskCalc import RiskCalc
 from commons.utils.Misc import get_bod_epoch, get_updated_sl
 
 MODEL_PREFIX = 'trainer.strategies.'
@@ -16,6 +17,29 @@ FINAL_DF_COLS = [
     'exit_price', 'exit_time',
     'pnl', 'sl', 'sl_update_cnt', 'max_mtm', 'max_mtm_pct',
 ]
+TRADE_DF_COLS = {
+    'scrip': pd.Series(dtype='str'),
+    'strategy': pd.Series(dtype='str'),
+    'tick': pd.Series(dtype='float'),
+    'date': pd.Series(dtype='str'),
+    'signal': pd.Series(dtype='int'),
+    'target': pd.Series(dtype='float'),
+    'bod_sl': pd.Series(dtype='float'),
+    'sl_range': pd.Series(dtype='float'),
+    'trail_sl': pd.Series(dtype='float'),
+    'strength': pd.Series(dtype='float'),
+    'entry_time': pd.Series(dtype='int'),
+    'entry_price': pd.Series(dtype='float'),
+    'status': pd.Series(dtype='str'),
+    'exit_price': pd.Series(dtype='float'),
+    'exit_time': pd.Series(dtype='int'),
+    'pnl': pd.Series(dtype='float'),
+    'sl': pd.Series(dtype='float'),
+    'sl_update_cnt': pd.Series(dtype='int'),
+    'max_mtm': pd.Series(dtype='float'),
+    'max_mtm_pct': pd.Series(dtype='float'),
+}
+
 MTM_DF_COLS = [
     'scrip', 'strategy', 'date', 'datetime', 'signal', 'time', 'open', 'high', 'low', 'close',
     'target', 'target_met', 'entry_price', 'mtm', 'mtm_pct'
@@ -46,8 +70,8 @@ def get_strength(row):
 def is_valid(row):
     if pd.isnull(row['signal']):
         return float('nan')
-    elif (row['signal'] == 1 and row['target'] > row['open']) or \
-            (row['signal'] == -1 and row['target'] < row['open']):
+    elif (row['signal'] == 1 and row['pred_target'] > row['open']) or \
+            (row['signal'] == -1 and row['pred_target'] < row['open']):
         return True
     else:
         return False
@@ -98,9 +122,11 @@ def calc_mtm_df(row):
 
 
 class FastBT:
+    rc: RiskCalc
 
     def __init__(self):
         self.mode = "BACKTEST"  # "NEXT-CLOSE"
+        self.rc = RiskCalc()
 
     def prep_data(self, scrip, strategy, raw_pred_df: pd.DataFrame, sd: ScripData):
         logger.info(f"Entering Prep data for {scrip} with {len(raw_pred_df)} predictions")
@@ -113,6 +139,7 @@ class FastBT:
             # This would be Next Close file
             pass
 
+        raw_pred_df.rename(columns={"target": "pred_target"}, inplace=True)
         raw_pred_df['date'] = pd.to_datetime(raw_pred_df['time'], unit='s', utc=True)
         raw_pred_df['date'] = raw_pred_df['date'].dt.tz_convert(IST)
         raw_pred_df['date'] = raw_pred_df['date'].dt.date
@@ -143,6 +170,11 @@ class FastBT:
         if self.mode == "BACKTEST":
             # Remove 1st Row since we don't have closing from T-1
             merged_df = merged_df.iloc[1:]
+
+        merged_df.loc[:, 'scrip'] = scrip
+        merged_df.loc[:, 'strategy'] = strategy
+        merged_df.loc[:, 'tick'] = 0.05
+
         return merged_df
 
     @staticmethod
@@ -194,6 +226,16 @@ class FastBT:
             "s_pct": s_pnl * 100 / s_avg_cost, "s_entry_pct": s_entry_pct
         }
 
+    def enrich_risk(self, df_to_enrich: pd.DataFrame, acct: str = 'Trader-V2-Pralhad') -> pd.DataFrame:
+        result = df_to_enrich.copy()
+        for idx, rec in result.loc[pd.notnull(result.signal)].iterrows():
+            t_r, sl_r, t_sl_r = self.rc.calc_risk_params(scrip=rec.scrip, strategy=rec.strategy, signal=rec.signal,
+                                                         tick=0.05, acct=acct, entry=rec.open,
+                                                         pred_target=rec.pred_target)
+            result.loc[idx, ['target_range', 'sl_range', 'trail_sl']] = float(t_r), float(sl_r), float(t_sl_r)
+
+        return result
+
     def get_accuracy(self, accu_params):
         scrip = accu_params.get('scrip')
         strategy = accu_params.get('strategy')
@@ -201,6 +243,13 @@ class FastBT:
         # TODO: Logging
         logger.info(f"Starting get_accuracy for: {scrip} & {strategy}")
         print(f"Starting get_accuracy for: {scrip} & {strategy}")
+
+        # Adjust the target as per Risk Calc.
+        merged_df = self.enrich_risk(merged_df)
+
+        # Calc Target & SL now
+        merged_df['target'] = merged_df['open'] + merged_df['signal'] * merged_df['target_range']
+        merged_df['sl'] = merged_df['open'] - merged_df['signal'] * merged_df['sl_range']
 
         # Is the target still available at open i.e. 9:15 candle? If so mark full day as is_valid.
         # Remove rows which couldn't be evaluated
@@ -219,17 +268,11 @@ class FastBT:
         merged_df['bod_sl'] = merged_df['sl'].ffill()
         merged_df['curr_trail_sl'] = merged_df['trail_sl'].ffill()
 
-        # Check for signals & events i.e.
-        # Target Met - 1st row
-        # SL Hit
-        # Max Profit : MTM + Max;
-        # Max Loss
-        trades = pd.DataFrame(columns=FINAL_DF_COLS)
+        merged_df.drop(columns=["target_range", "sl_range"], inplace=True)
+
+        trades = pd.DataFrame(TRADE_DF_COLS)
+
         mtm_df = merged_df.copy()
-        # MTM_DF_COLS = [
-        #     'mtm', 'mtm_pct'
-        # ]
-        mtm_df = mtm_df.assign(scrip=scrip, strategy=strategy)
         mtm_df['target_met'] = mtm_df.apply(target_met, axis=1)
         mtm_df[['mtm', 'mtm_pct']] = mtm_df.apply(calc_mtm_df, axis=1, result_type='expand')
         mtm_df.reset_index(inplace=True)
@@ -415,11 +458,11 @@ if __name__ == '__main__':
 
     from commons.service.LogService import LogService
 
-    acct = 'Trader-V2-Pralhad'
+    acct_ = 'Trader-V2-Pralhad'
     dt_ = '2023-12-01'
     db = DatabaseEngine()
     ls = LogService(db)
-    data = ls.get_log_entry_data(log_type=PARAMS_LOG_TYPE, keys=["COB"], log_date=dt_, acct=acct)
+    data = ls.get_log_entry_data(log_type=PARAMS_LOG_TYPE, keys=["COB"], log_date=dt_, acct=acct_)
     bt_trades, bt_stats, bt_mtm = f.run_cob_accuracy(params=pd.DataFrame(data))
     logger.info(f"bt_trades#: {len(bt_trades)}")
     logger.debug(f"bt_trades:\n{bt_trades}")
