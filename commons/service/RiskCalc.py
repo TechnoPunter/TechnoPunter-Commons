@@ -11,6 +11,7 @@ class RiskCalc:
     risk_params: dict
     default_reward_factor: float
     default_risk_reward_ratio: float
+    default_trail_sl_factor: float
 
     def __init__(self):
         logger.debug(f"Starting RiskCalc")
@@ -26,6 +27,7 @@ class RiskCalc:
 
         self.default_reward_factor = defaults.get('reward_factor')
         self.default_risk_reward_ratio = defaults.get('risk_reward_ratio')
+        self.default_trail_sl_factor = defaults.get('trail_sl_factor')
 
         for scrip in r_cfg.get('scrips'):
             scrip_name = scrip.get('scripName')
@@ -34,19 +36,27 @@ class RiskCalc:
                 signal = str(model.get('signal'))
                 reward_factor = model.get('reward_factor')
                 risk_reward_ratio = model.get('risk_reward_ratio')
+                trail_sl_factor = model.get('trail_sl_factor')
                 override_accounts = []
                 for acct in model.get('accounts'):
                     acct_name = acct.get('name')
                     key = ":".join([scrip_name, model_name, signal, acct_name])
                     acct_reward_factor = acct.get('reward_factor', reward_factor)
                     acct_risk_reward_ratio = acct.get('risk_reward_ratio', risk_reward_ratio)
-                    self.risk_params[key] = {"reward_factor": acct_reward_factor,
-                                             "risk_reward_ratio": acct_risk_reward_ratio}
+                    acct_trail_sl_factor = acct.get('trail_sl_factor', trail_sl_factor)
+                    self.risk_params[key] = {
+                        "reward_factor": acct_reward_factor,
+                        "risk_reward_ratio": acct_risk_reward_ratio,
+                        "trail_sl_factor": acct_trail_sl_factor
+                    }
                     override_accounts.append(acct.get('name'))
                 for acct_name in set(default_accounts).difference(set(override_accounts)):
                     key = ":".join([scrip_name, model_name, signal, acct_name])
-                    self.risk_params[key] = {"reward_factor": reward_factor,
-                                             "risk_reward_ratio": risk_reward_ratio}
+                    self.risk_params[key] = {
+                        "reward_factor": reward_factor,
+                        "risk_reward_ratio": risk_reward_ratio,
+                        "trail_sl_factor": trail_sl_factor
+                    }
         logger.info(f"Final Risk Params:\n{json.dumps(self.risk_params, indent=4, sort_keys=True)}")
 
     def calc_risk_params(self, scrip: str, strategy: str, signal: int, tick: float, acct: str, entry: float,
@@ -88,17 +98,20 @@ class RiskCalc:
 
         reward_factor = rec.get('reward_factor', self.default_reward_factor)
         risk_reward_ratio = rec.get('risk_reward_ratio', self.default_risk_reward_ratio)
+        trail_sl_factor = rec.get('trail_sl_factor', self.default_trail_sl_factor)
 
         target_range = abs(pred_target - entry)
 
         adj_target_range = target_range * (1 + reward_factor)
 
         adj_sl_range = adj_target_range / risk_reward_ratio
+        adj_trail_sl_range = adj_sl_range * trail_sl_factor
 
         ret_adj_target_range = round_price(price=adj_target_range, tick=tick, scrip=scrip)
         ret_adj_sl_range = round_price(price=adj_sl_range, tick=tick, scrip=scrip)
-        logger.info(f"Target:{ret_adj_target_range} SL:{ret_adj_sl_range}")
-        return ret_adj_target_range, ret_adj_sl_range
+        ret_adj_trail_sl_range = round_price(price=adj_trail_sl_range, tick=tick, scrip=scrip)
+        logger.info(f"Target:{ret_adj_target_range} SL:{ret_adj_sl_range} Trail SL: {ret_adj_trail_sl_range}")
+        return ret_adj_target_range, ret_adj_sl_range, ret_adj_trail_sl_range
 
 
 if __name__ == '__main__':
@@ -113,5 +126,6 @@ if __name__ == '__main__':
     _acct = "X"
     _entry = 100.00
     _pred_target = 101.00
-    x, y = rc.calc_risk_params(scrip=_scrip, strategy=_strategy, signal=_signal, tick=_tick, acct=_acct,
+    x, y, z = rc.calc_risk_params(scrip=_scrip, strategy=_strategy, signal=_signal, tick=_tick, acct=_acct,
                                entry=_entry, pred_target=_pred_target)
+    print(f"{x}, {y}, {z}")
