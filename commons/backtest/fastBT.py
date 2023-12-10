@@ -55,9 +55,9 @@ MODE = "SERVER"
 
 def get_pnl(row):
     if row.signal == 1:
-        return row.exit_price - row.entry_price
+        return round((row.exit_price - row.entry_price), 2)
     else:
-        return row.entry_price - row.exit_price
+        return round((row.entry_price - row.exit_price), 2)
 
 
 def get_strength(row):
@@ -290,7 +290,7 @@ class FastBT:
                 trades.loc[trade_idx, 'target'] = rec.target
                 trades.loc[trade_idx, 'bod_sl'] = rec.bod_sl
                 trades.loc[trade_idx, 'sl'] = rec.bod_sl
-                trades.loc[trade_idx, 'sl_range'] = abs(rec.bod_sl - rec.open)
+                trades.loc[trade_idx, 'sl_range'] = round(abs(rec.bod_sl - rec.open), 2)
                 trades.loc[trade_idx, 'trail_sl'] = rec.trail_sl
                 trades.loc[trade_idx, 'entry_price'] = rec.open
                 trades.loc[trade_idx, 'entry_time'] = rec.time

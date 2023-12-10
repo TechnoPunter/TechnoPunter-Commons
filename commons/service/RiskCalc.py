@@ -59,6 +59,13 @@ class RiskCalc:
                     }
         logger.info(f"Final Risk Params:\n{json.dumps(self.risk_params, indent=4, sort_keys=True)}")
 
+    @staticmethod
+    def __is_valid(signal, pred_target, entry):
+        if (signal == 1 and pred_target > entry) or (signal == -1 and pred_target < entry):
+            return True
+        else:
+            return False
+
     def calc_risk_params(self, scrip: str, strategy: str, signal: int, tick: float, acct: str, entry: float,
                          pred_target: float) -> (str, str):
         """
@@ -80,6 +87,13 @@ class RiskCalc:
 
         (ret_adj_target_range, ret_adj_sl_range) = (1.1, 0.75)
 
+        Edge Case Handling:
+        In case we have received an invalid target i.e. -->
+        entry = 100
+        target = 98
+
+        We will return safe values to prevent impact.
+
         :param acct:
         :param scrip:
         :param strategy:
@@ -89,6 +103,11 @@ class RiskCalc:
         :param pred_target:
         :return:
         """
+        if not (self.__is_valid(signal=signal, pred_target=pred_target, entry=entry)):
+            logger.info(f"Invalid entry for {scrip} & {strategy} : {signal}; {pred_target}; LTP: {entry}")
+            factor = -1 * abs(pred_target - entry)
+            return round_price(factor, tick=tick, scrip=scrip), "0.00", "0.00"
+
         key = ":".join([scrip, strategy, str(signal), acct])
         logger.info(f"Key:{key}")
         rec = self.risk_params.get(key, {'reward_factor': self.default_reward_factor,
@@ -127,5 +146,5 @@ if __name__ == '__main__':
     _entry = 100.00
     _pred_target = 101.00
     x, y, z = rc.calc_risk_params(scrip=_scrip, strategy=_strategy, signal=_signal, tick=_tick, acct=_acct,
-                               entry=_entry, pred_target=_pred_target)
+                                  entry=_entry, pred_target=_pred_target)
     print(f"{x}, {y}, {z}")
