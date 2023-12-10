@@ -104,7 +104,7 @@ class RiskCalc:
 
         adj_target_range = target_range * (1 + reward_factor)
 
-        adj_sl_range = adj_target_range / risk_reward_ratio
+        adj_sl_range = adj_target_range * risk_reward_ratio
         adj_trail_sl_range = adj_sl_range * trail_sl_factor
 
         ret_adj_target_range = round_price(price=adj_target_range, tick=tick, scrip=scrip)
