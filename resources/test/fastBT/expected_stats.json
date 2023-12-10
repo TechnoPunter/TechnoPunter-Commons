@@ -5,14 +5,14 @@
   "entry_pct": 88.0,
   "l_trades": 13,
   "l_pct_success": 27.27,
-  "l_pnl": -3.0,
+  "l_pnl": -1.4,
   "l_avg_cost": 100.0,
-  "l_pct": -3.0,
+  "l_pct": -1.4,
   "l_entry_pct": 84.62,
   "s_trades": 12,
   "s_pct_success": 27.27,
-  "s_pnl": -2.0,
+  "s_pnl": -2.8,
   "s_avg_cost": 100.0,
-  "s_pct": -2.0,
+  "s_pct": -2.8,
   "s_entry_pct": 91.67
 }

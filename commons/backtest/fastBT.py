@@ -204,7 +204,7 @@ class FastBT:
                 l_pct_success = (len(l_success) / l_valid_count) * 100
                 l_pct_success = round(l_pct_success, 2)
                 l_avg_cost = l_trades['entry_price'].mean()
-                l_pnl = l_trades['pnl'].sum()
+                l_pnl = round(l_trades['pnl'].sum(), 2)
 
             s_trades = final_df.loc[final_df.signal == -1]
             if len(s_trades) > 0:
@@ -216,7 +216,7 @@ class FastBT:
                 s_pct_success = (len(s_success) / s_valid_count) * 100
                 s_pct_success = round(s_pct_success, 2)
                 s_avg_cost = s_trades['entry_price'].mean()
-                s_pnl = s_trades['pnl'].sum()
+                s_pnl = round(s_trades['pnl'].sum(), 2)
         return {
             "scrip": scrip, "strategy": MODEL_PREFIX + strategy,
             "trades": count, "entry_pct": (l_valid_count + s_valid_count) * 100 / count,
