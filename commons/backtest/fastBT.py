@@ -229,7 +229,7 @@ class FastBT:
                     s_pct_entry = (s_valid_count / s_count) * 100
                     s_pct_entry = round(s_pct_entry, 2)
                     s_success = s_trades.loc[s_trades.status == 'TARGET-HIT']
-                    s_pct_success = (len(s_success) / l_valid_count) * 100
+                    s_pct_success = (len(s_success) / s_valid_count) * 100
                     s_pct_success = round(s_pct_success, 2)
                     s_avg_cost = s_trades['entry_price'].mean()
                     s_pnl = round(s_trades['pnl'].sum(), 2)
