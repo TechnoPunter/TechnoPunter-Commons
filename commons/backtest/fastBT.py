@@ -184,47 +184,63 @@ class FastBT:
         l_trades = 0
         l_pct_success = 0
         l_valid_count = 0
-        l_entry_pct = 0.0
+        l_pct_entry = 0.0
         l_pnl = 0
         l_avg_cost = 0.01
+        l_pct_returns = 0.0
         s_trades = 0
         s_pct_success = 0
         s_valid_count = 0
-        s_entry_pct = 0.0
+        s_pct_entry = 0.0
         s_pnl = 0
         s_avg_cost = 0.01
+        s_pct_returns = 0.0
         count = len(final_df)
         if len(final_df) > 0:
             l_trades = final_df.loc[final_df.signal == 1]
             if len(l_trades) > 0:
                 l_count = len(l_trades)
                 l_valid_count = len(l_trades.loc[l_trades.status != 'INVALID'])
-                l_entry_pct = (l_valid_count / l_count) * 100
-                l_entry_pct = round(l_entry_pct, 2)
-                l_success = l_trades.loc[l_trades.status == 'TARGET-HIT']
-                l_pct_success = (len(l_success) / l_valid_count) * 100
-                l_pct_success = round(l_pct_success, 2)
-                l_avg_cost = l_trades['entry_price'].mean()
-                l_pnl = round(l_trades['pnl'].sum(), 2)
+                if l_valid_count == 0:
+                    l_pct_entry = 0.0
+                    l_pct_success = 0.0
+                    l_avg_cost = 0.0
+                    l_pct_returns = 0.0
+                else:
+                    l_pct_entry = (l_valid_count / l_count) * 100
+                    l_pct_entry = round(l_pct_entry, 2)
+                    l_success = l_trades.loc[l_trades.status == 'TARGET-HIT']
+                    l_pct_success = (len(l_success) / l_valid_count) * 100
+                    l_pct_success = round(l_pct_success, 2)
+                    l_avg_cost = l_trades['entry_price'].mean()
+                    l_pnl = round(l_trades['pnl'].sum(), 2)
+                    l_pct_returns = round((l_pnl * 100 / l_avg_cost), 2)
 
             s_trades = final_df.loc[final_df.signal == -1]
             if len(s_trades) > 0:
                 s_count = len(s_trades)
                 s_valid_count = len(s_trades.loc[s_trades.status != 'INVALID'])
-                s_entry_pct = (s_valid_count / s_count) * 100
-                s_entry_pct = round(s_entry_pct, 2)
-                s_success = s_trades.loc[s_trades.status == 'TARGET-HIT']
-                s_pct_success = (len(s_success) / s_valid_count) * 100
-                s_pct_success = round(s_pct_success, 2)
-                s_avg_cost = s_trades['entry_price'].mean()
-                s_pnl = round(s_trades['pnl'].sum(), 2)
+                if s_valid_count == 0:
+                    s_pct_entry = 0.0
+                    s_pct_success = 0.0
+                    s_avg_cost = 0.0
+                    s_pct_returns = 0.0
+                else:
+                    s_pct_entry = (s_valid_count / s_count) * 100
+                    s_pct_entry = round(s_pct_entry, 2)
+                    s_success = s_trades.loc[s_trades.status == 'TARGET-HIT']
+                    s_pct_success = (len(s_success) / l_valid_count) * 100
+                    s_pct_success = round(s_pct_success, 2)
+                    s_avg_cost = s_trades['entry_price'].mean()
+                    s_pnl = round(s_trades['pnl'].sum(), 2)
+                    s_pct_returns = round((s_pnl * 100 / s_avg_cost), 2)
         return {
             "scrip": scrip, "strategy": MODEL_PREFIX + strategy,
-            "trades": count, "entry_pct": (l_valid_count + s_valid_count) * 100 / count,
-            "l_trades": len(l_trades), "l_pct_success": l_pct_success, "l_pnl": l_pnl, "l_avg_cost": l_avg_cost,
-            "l_pct": l_pnl * 100 / l_avg_cost, "l_entry_pct": l_entry_pct,
-            "s_trades": len(s_trades), "s_pct_success": s_pct_success, "s_pnl": s_pnl, "s_avg_cost": s_avg_cost,
-            "s_pct": s_pnl * 100 / s_avg_cost, "s_entry_pct": s_entry_pct
+            "trades": count, "pct_entry": (l_valid_count + s_valid_count) * 100 / count,
+            "l_num_trades": len(l_trades), "l_pct_success": l_pct_success, "l_pnl": l_pnl, "l_avg_cost": l_avg_cost,
+            "l_pct_returns": l_pct_returns, "l_pct_entry": l_pct_entry,
+            "s_num_trades": len(s_trades), "s_pct_success": s_pct_success, "s_pnl": s_pnl, "s_avg_cost": s_avg_cost,
+            "s_pct_returns": s_pct_returns, "s_pct_entry": s_pct_entry
         }
 
     def enrich_risk(self, df_to_enrich: pd.DataFrame, acct: str = 'Trader-V2-Pralhad') -> pd.DataFrame:
