@@ -124,8 +124,9 @@ def calc_mtm_df(row):
 class FastBT:
     rc: RiskCalc
 
-    def __init__(self):
+    def __init__(self, exec_mode: str = MODE):
         self.mode = "BACKTEST"  # "NEXT-CLOSE"
+        self.exec_mode = exec_mode
         self.rc = RiskCalc()
 
     def prep_data(self, scrip, strategy, raw_pred_df: pd.DataFrame, sd: ScripData):
@@ -360,7 +361,7 @@ class FastBT:
             logger.info(f"Getting dict based results for {scrip} & {strategy}")
             merged_df = self.prep_data(scrip, strategy, raw_pred_df=raw_pred_df, sd=sd)
             accuracy_params.append({"scrip": scrip, "strategy": strategy, "merged_df": merged_df})
-        if MODE == "SERVER":
+        if self.mode == "SERVER":
             try:
                 logger.info(f"About to start accuracy calc with {len(accuracy_params)} objects")
                 pool = Pool()
@@ -406,7 +407,7 @@ class FastBT:
             df.loc[:, 'time'] = trade_time
             merged_df = self.prep_data(scrip, strategy, raw_pred_df=df[['target', 'signal', 'time']], sd=sd)
             accuracy_params.append({"scrip": scrip, "strategy": strategy, "merged_df": merged_df})
-        if MODE == "SERVER":
+        if self.mode == "SERVER":
             try:
                 pool = Pool()
                 result_set = pool.imap(self.get_accuracy, accuracy_params)
@@ -438,8 +439,7 @@ if __name__ == '__main__':
 
     setup_logging("fastBT.log")
 
-    MODE = "LOCAL"
-    f = FastBT()
+    f = FastBT(exec_mode="LOCAL")
     params_ = []
     for scrip_ in cfg['steps']['scrips']:
         for strategy_ in cfg['steps']['strats']:
