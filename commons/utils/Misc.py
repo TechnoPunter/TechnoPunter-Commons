@@ -58,13 +58,13 @@ def get_new_sl(order: dict, ltp: float = None):
     logger.debug(f"__get_new_sl: Update order for {order['scrip']} for SL Order ID: {order['sl_order_id']}")
     direction = 1 if order['signal'] == 1 else -1
 
-    sl = order['sl_pct']
-    trail_sl = order['trail_sl_pct']
-    logger.debug(f"get_new_sl: SL: {sl}; Trail SL: {trail_sl}")
-    logger.debug(f"get_new_sl: Validating if "
-                 f"{abs(ltp - float(order['sl_price']))} > {ltp * float((sl + trail_sl) / 100)}")
-    if abs(ltp - float(order['sl_price'])) > ltp * float((sl + trail_sl) / 100):
-        new_sl = ltp - direction * ltp * float(sl / 100)
+    sl = float(order['sl_price'])
+    sl_range = order['sl_range']
+    trail_sl = order['trail_sl']
+    logger.debug(f"get_new_sl: SL: {sl_range}; Trail SL: {trail_sl}")
+    logger.debug(f"get_new_sl: Validating if {abs(ltp - sl)} > {sl_range + trail_sl}")
+    if abs(ltp - sl) > sl_range + trail_sl:
+        new_sl = ltp - direction * sl_range
         new_sl = format(round(new_sl / order['tick']) * order['tick'], ".2f")
         logger.debug(f"get_new_sl: Updated sl: {new_sl}")
         return new_sl
@@ -82,7 +82,7 @@ def get_updated_sl(rec: dict, low: float, high: float) -> str:
     sl_range = rec['sl_range']
     trail_sl = rec['trail_sl']
     logger.debug(f"get_new_sl: SL: {sl}; Trail SL: {trail_sl} @ ltp {ltp}")
-    if abs(ltp - rec['sl']) > sl_range + trail_sl:
+    if abs(ltp - sl) > sl_range + trail_sl:
         new_sl = ltp - direction * sl_range
         new_sl = format(round(new_sl / rec['tick']) * rec['tick'], ".2f")
         logger.debug(f"get_new_sl: Updated sl: {new_sl}")
