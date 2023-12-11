@@ -36,6 +36,7 @@ LOG_STORE_MODEL = "LogStore"
 SCRIP_HIST = "ScripHist"
 PARAMS_HIST = "Params"
 TRADES_MTM_TABLE = "TradesMTM"
+TRADE_LOG = "TradeLog"
 
 # Trainer Paths
 SUMMARY_PATH = os.path.join(_cfg['generated'], 'summary')

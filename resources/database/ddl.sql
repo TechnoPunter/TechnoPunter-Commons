@@ -244,3 +244,27 @@ CREATE TABLE params_hist(
     sl_update_cnt	int4,
 	CONSTRAINT params_hist_pk PRIMARY KEY (params_id)
 );
+
+
+CREATE TABLE trade_log(
+    trade_log_id int8 NOT NULL GENERATED ALWAYS AS IDENTITY( INCREMENT BY 1 MINVALUE 1 MAXVALUE 2147483647 START 1 CACHE 1 NO CYCLE),
+    acct varchar,
+    trade_date varchar,
+    trade_type varchar,
+    scrip varchar,
+    model varchar,
+    signal int4,
+    target float4,
+    quantity int4,
+    entry_price float4,
+    entry_time int4,
+    status varchar,
+    exit_price float4,
+    exit_time int4,
+    pnl float4,
+    sl float4,
+    sl_update_cnt float4,
+    max_mtm float4,
+    max_mtm_pct float4,
+    CONSTRAINT trade_log_pk PRIMARY KEY (trade_log_id)
+);

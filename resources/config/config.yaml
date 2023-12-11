@@ -4,3 +4,4 @@ include:
   - path-params
   - alert
   - risk-params
+  - trainer-config

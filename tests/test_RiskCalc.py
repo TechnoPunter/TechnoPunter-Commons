@@ -42,7 +42,7 @@ class TestRiskCalc(unittest.TestCase):
         result = read_file("risk-calc/expected-risk-params.json")
         self.assertEqual(result, risk_params)
 
-    def test_calc_risk_params(self):
+    def test_calc_risk_params_scrip_default(self):
         rc = RiskCalc()
 
         scrip = "NSE_APOLLOHOSP"
@@ -53,11 +53,12 @@ class TestRiskCalc(unittest.TestCase):
         entry = 100.00
         pred_target = 101.00
 
-        t_r, sl_r = rc.calc_risk_params(scrip=scrip, strategy=strategy, signal=signal, tick=tick, acct=acct,
-                                        entry=entry, pred_target=pred_target)
+        t_r, sl_r, t_sl_r = rc.calc_risk_params(scrip=scrip, strategy=strategy, signal=signal, tick=tick, acct=acct,
+                                                entry=entry, pred_target=pred_target)
 
-        self.assertEqual('1.10', t_r)
-        self.assertEqual('0.70', sl_r)
+        self.assertEqual('1.10', t_r, "Reward is not matching")
+        self.assertEqual('0.65', sl_r, "SL is not matching")
+        self.assertEqual('0.25', t_sl_r, "T-SL is not matching")
 
     def test_calc_risk_params_acct(self):
         rc = RiskCalc()
@@ -70,11 +71,12 @@ class TestRiskCalc(unittest.TestCase):
         entry = 100.00
         pred_target = 101.00
 
-        t_r, sl_r = rc.calc_risk_params(scrip=scrip, strategy=strategy, signal=signal, tick=tick, acct=acct,
-                                        entry=entry, pred_target=pred_target)
+        t_r, sl_r, t_sl_r = rc.calc_risk_params(scrip=scrip, strategy=strategy, signal=signal, tick=tick, acct=acct,
+                                                entry=entry, pred_target=pred_target)
 
-        self.assertEqual('1.20', t_r)
-        self.assertEqual('0.90', sl_r)
+        self.assertEqual('1.20', t_r, "Reward is not matching")
+        self.assertEqual('0.35', sl_r, "SL is not matching")
+        self.assertEqual('0.20', t_sl_r, "T-SL is not matching")
 
     def test_calc_risk_params_fallback(self):
         rc = RiskCalc()
@@ -87,11 +89,12 @@ class TestRiskCalc(unittest.TestCase):
         entry = 100.00
         pred_target = 101.00
 
-        t_r, sl_r = rc.calc_risk_params(scrip=scrip, strategy=strategy, signal=signal, tick=tick, acct=acct,
-                                        entry=entry, pred_target=pred_target)
+        t_r, sl_r, t_sl_r = rc.calc_risk_params(scrip=scrip, strategy=strategy, signal=signal, tick=tick, acct=acct,
+                                                entry=entry, pred_target=pred_target)
 
-        self.assertEqual('1.00', t_r)
-        self.assertEqual('1.00', sl_r)
+        self.assertEqual('1.00', t_r, "Reward is not matching")
+        self.assertEqual('0.50', sl_r, "SL is not matching")
+        self.assertEqual('0.15', t_sl_r, "T-SL is not matching")
 
 
 if __name__ == '__main__':
