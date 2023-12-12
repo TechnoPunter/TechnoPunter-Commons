@@ -10,7 +10,7 @@ class TradesMTM(Base):
     acct = Column(String)
     scrip = Column(String)
     strategy = Column(String)
-    date = Column(String)
+    trade_date = Column(String)
     datetime = Column(String)
     signal = Column(Integer)
     time = Column(Integer)
