@@ -59,8 +59,8 @@ def get_new_sl(order: dict, ltp: float = None):
     direction = 1 if order['signal'] == 1 else -1
 
     sl = float(order['sl_price'])
-    sl_range = order['sl_range']
-    trail_sl = order['trail_sl']
+    sl_range = float(order['sl_range'])
+    trail_sl = float(order['trail_sl'])
     logger.debug(f"get_new_sl: SL: {sl_range}; Trail SL: {trail_sl}")
     logger.debug(f"get_new_sl: Validating if {abs(ltp - sl)} > {sl_range + trail_sl}")
     if abs(ltp - sl) > sl_range + trail_sl:
