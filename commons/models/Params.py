@@ -38,4 +38,4 @@ class Params(Base):
     target_price = Column(Numeric)
     strength = Column(Numeric)
     active = Column(String)
-    sl_update_cnt = Column(Integer)
+    bod_sl = Column(Numeric)

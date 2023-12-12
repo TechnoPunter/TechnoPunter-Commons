@@ -241,7 +241,7 @@ CREATE TABLE params_hist(
     target_price	float4	,
     strength	float4	,
     active	varchar	,
-    sl_update_cnt	int4,
+    bod_sl	float4,
 	CONSTRAINT params_hist_pk PRIMARY KEY (params_id)
 );
 
