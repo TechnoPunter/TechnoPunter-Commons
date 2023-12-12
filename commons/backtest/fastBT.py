@@ -41,7 +41,7 @@ TRADE_DF_COLS = {
 }
 
 MTM_DF_COLS = [
-    'scrip', 'strategy', 'date', 'datetime', 'signal', 'time', 'open', 'high', 'low', 'close',
+    'scrip', 'strategy', 'trade_date', 'datetime', 'signal', 'time', 'open', 'high', 'low', 'close',
     'target', 'target_met', 'entry_price', 'mtm', 'mtm_pct'
 ]
 logger = logging.getLogger(__name__)
