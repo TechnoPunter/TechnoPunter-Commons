@@ -88,5 +88,5 @@ def get_updated_sl(rec: dict, low: float, high: float) -> str:
         logger.debug(f"get_new_sl: Updated sl: {new_sl}")
         return new_sl
     else:
-        logger.info(f"get_new_sl: Same sl for {rec['scrip']} @ {ltp}")
+        logger.debug(f"get_new_sl: Same sl for {rec['scrip']} @ {ltp}")
         return "0.0"

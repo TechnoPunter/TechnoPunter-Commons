@@ -41,7 +41,7 @@ TRADE_DF_COLS = {
 }
 
 MTM_DF_COLS = [
-    'scrip', 'strategy', 'date', 'datetime', 'signal', 'time', 'open', 'high', 'low', 'close',
+    'scrip', 'strategy', 'trade_date', 'datetime', 'signal', 'time', 'open', 'high', 'low', 'close',
     'target', 'target_met', 'entry_price', 'mtm', 'mtm_pct'
 ]
 logger = logging.getLogger(__name__)
@@ -292,6 +292,7 @@ class FastBT:
         mtm_df = merged_df.copy()
         mtm_df['target_met'] = mtm_df.apply(target_met, axis=1)
         mtm_df[['mtm', 'mtm_pct']] = mtm_df.apply(calc_mtm_df, axis=1, result_type='expand')
+        mtm_df.rename(columns={"date": "trade_date"}, inplace=True)
         mtm_df.reset_index(inplace=True)
 
         trade_idx = -1
