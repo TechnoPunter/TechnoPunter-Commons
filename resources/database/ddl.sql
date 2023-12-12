@@ -198,7 +198,6 @@ CREATE TABLE public.trades_mtm(
 	close float4 NULL,
 	target float4 NULL,
 	target_met varchar NULL,
-	day_close float4 NULL,
 	entry_price float4 NULL,
 	mtm float4 NULL,
 	mtm_pct float4 NULL,
