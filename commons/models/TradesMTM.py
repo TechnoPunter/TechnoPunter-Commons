@@ -3,10 +3,6 @@ from sqlalchemy import Column, Integer, String, Numeric
 from commons.dataprovider.database import Base
 
 
-# MTM_DF_COLS = [
-#     'scrip', 'strategy', 'date', 'datetime', 'signal', 'time', 'open', 'high', 'low', 'close',
-#     'target', 'target_met', 'day_close', 'entry_price', 'mtm', 'mtm_pct'
-# ]
 class TradesMTM(Base):
     __tablename__ = 'trades_mtm'
 
@@ -23,7 +19,6 @@ class TradesMTM(Base):
     close = Column(Numeric)
     target = Column(Numeric)
     target_met = Column(String)
-    day_close = Column(Numeric)
     entry_price = Column(Numeric)
     mtm = Column(Numeric)
     mtm_pct = Column(Numeric)
