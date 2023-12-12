@@ -7,6 +7,7 @@ class TradesMTM(Base):
     __tablename__ = 'trades_mtm'
 
     trade_mtm_id = Column(Integer, primary_key=True)
+    acct = Column(String)
     scrip = Column(String)
     strategy = Column(String)
     date = Column(String)

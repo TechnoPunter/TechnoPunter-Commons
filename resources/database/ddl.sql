@@ -186,6 +186,7 @@ CREATE TABLE public.scrip_hist(
 
 CREATE TABLE public.trades_mtm(
 	trade_mtm_id int8 NOT NULL GENERATED ALWAYS AS IDENTITY( INCREMENT BY 1 MINVALUE 1 MAXVALUE 2147483647 START 1 CACHE 1 NO CYCLE),
+	acct varchar NOT NULL,
 	scrip varchar NOT NULL,
 	strategy varchar NOT NULL,
 	date varchar NOT NULL,
