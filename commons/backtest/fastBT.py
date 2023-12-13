@@ -238,7 +238,7 @@ class FastBT:
                         s_pnl = round(s_trades['pnl'].sum(), 2)
                         s_pct_returns = round((s_pnl * 100 / s_avg_cost), 2)
             results.append({
-                "scrip": scrip, "strategy": MODEL_PREFIX + strategy, "trade_date": trade_dt,
+                "scrip": scrip, "strategy": strategy, "trade_date": trade_dt,
                 "trades": count, "pct_entry": round(((l_valid_count + s_valid_count) * 100 / count), 2),
                 "l_num_predictions": l_num_predictions, "l_num_trades": l_valid_count,
                 "l_pct_success": l_pct_success, "l_pnl": l_pnl, "l_avg_cost": l_avg_cost,
