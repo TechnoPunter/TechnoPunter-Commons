@@ -384,7 +384,7 @@ class FastBT:
             logger.info(f"Getting dict based results for {scrip} & {strategy}")
             merged_df = self.prep_data(scrip, strategy, raw_pred_df=raw_pred_df, sd=sd)
             accuracy_params.append({"scrip": scrip, "strategy": strategy, "merged_df": merged_df})
-        if self.mode == "SERVER":
+        if self.exec_mode == "SERVER":
             try:
                 logger.info(f"About to start accuracy calc with {len(accuracy_params)} objects")
                 pool = Pool()
