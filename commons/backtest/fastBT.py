@@ -403,7 +403,7 @@ class FastBT:
                 mtm[key] = mtm_df
         result_trades = pd.concat(trades)
         result_trades.sort_values(by=['date', 'scrip'], inplace=True)
-        result_stats = pd.DataFrame(stats)
+        result_stats = pd.concat(stats)
         return result_trades, result_stats, mtm
 
     def run_cob_accuracy(self, params: pd.DataFrame):
