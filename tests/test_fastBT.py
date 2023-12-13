@@ -65,11 +65,11 @@ class TestFastBT(unittest.TestCase):
         pd.testing.assert_frame_equal(expected_mtm_df, mtm_df)
 
     def test_calc_stats(self):
-        expected_df = read_file_df("fastBT/expected_trade_df.csv")
-        expected_stats = read_file("fastBT/expected_stats.json")
+        trades_df = read_file_df("fastBT/expected_trade_df.csv")
+        expected_stats = read_file_df("fastBT/expected_stats.csv")
 
-        ret_val = self.fb.calc_stats(final_df=expected_df, scrip=self.scrip, strategy=self.strategy)
-        self.assertEqual(ret_val, expected_stats)
+        ret_val = self.fb.calc_stats(input_df=trades_df, scrip=self.scrip, strategy=self.strategy)
+        pd.testing.assert_frame_equal(ret_val, expected_stats)
 
     # @patch('commons.dataprovider.ScripData.ScripData.get_base_data')
     @patch('commons.dataprovider.ScripData.ScripData')

@@ -1,4 +1,4 @@
-scrip,strategy,date,datetime,signal,time,open,high,low,close,target,target_met,entry_price,mtm,mtm_pct
+scrip,strategy,trade_date,datetime,signal,time,open,high,low,close,target,target_met,entry_price,mtm,mtm_pct
 NSE_ACME,TEST.ME,2023-07-05,2023-07-05 09:15:00+05:30,1.0,1688528700,100.0,100.0,100.0,100.0,98.0,True,,,
 NSE_ACME,TEST.ME,2023-07-05,2023-07-05 10:00:00+05:30,,1688531400,100.0,100.0,100.0,100.0,,True,,,
 NSE_ACME,TEST.ME,2023-07-05,2023-07-05 11:00:00+05:30,,1688535000,100.0,100.0,100.0,100.0,,True,,,

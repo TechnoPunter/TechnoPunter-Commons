@@ -18,6 +18,7 @@ NEXT_CLOSE_FILE_NAME = "_Next_Close.csv"
 PNL_FILE_NAME = "_PNL.csv"
 MODEL_SCRIPT_NAME = '_tpot_exported_pipeline.py'
 MODEL_SAVE_FILE_NAME = '.sav'
+MODEL_PREFIX = 'trainer.strategies.'
 COLUMN_SEPARATOR = ","
 
 # Time Related
