@@ -449,7 +449,7 @@ class FastBT:
         if len(trades) > 0:
             result_trades = pd.concat(trades)
             result_trades.sort_values(by=['date', 'scrip'], inplace=True)
-            result_stats = pd.DataFrame(stats)
+            result_stats = pd.concat(stats)
             result_stats.dropna(subset=['scrip'], inplace=True)
         else:
             result_trades = pd.DataFrame()
@@ -470,12 +470,12 @@ if __name__ == '__main__':
             raw_pred_df_ = pd.read_csv(file)
             params_.append({"scrip": scrip_, "strategy": strategy_, "raw_pred_df": raw_pred_df_})
 
-    bt_trades, bt_stats, bt_mtm = f.run_accuracy(params_)
-    logger.info(f"bt_trades#: {len(bt_trades)}")
-    logger.debug(f"bt_trades:\n{bt_trades}")
-    logger.info(f"bt_stats#:{len(bt_stats)}")
-    logger.debug(f"bt_stats:\n{bt_stats}")
-    logger.info(f"bt_mtm#: {len(bt_mtm)}")
+    # bt_trades, bt_stats, bt_mtm = f.run_accuracy(params_)
+    # logger.info(f"bt_trades#: {len(bt_trades)}")
+    # logger.debug(f"bt_trades:\n{bt_trades}")
+    # logger.info(f"bt_stats#:{len(bt_stats)}")
+    # logger.debug(f"bt_stats:\n{bt_stats}")
+    # logger.info(f"bt_mtm#: {len(bt_mtm)}")
 
     # exit
 
