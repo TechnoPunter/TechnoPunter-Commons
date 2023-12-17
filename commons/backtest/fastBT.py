@@ -24,6 +24,7 @@ TRADE_DF_COLS = {
     'date': pd.Series(dtype='str'),
     'signal': pd.Series(dtype='int'),
     'target': pd.Series(dtype='float'),
+    'bod_strength': pd.Series(dtype='float'),
     'bod_sl': pd.Series(dtype='float'),
     'sl_range': pd.Series(dtype='float'),
     'trail_sl': pd.Series(dtype='float'),
@@ -132,24 +133,44 @@ class FastBT:
     def prep_data(self, scrip, strategy, raw_pred_df: pd.DataFrame, sd: ScripData):
         logger.info(f"Entering Prep data for {scrip} with {len(raw_pred_df)} predictions")
 
+        # Need date for fetch data and readability
+        raw_pred_df['date'] = pd.to_datetime(raw_pred_df['time'], unit='s', utc=True)
+        raw_pred_df['date'] = raw_pred_df['date'].dt.tz_convert(IST)
+        raw_pred_df['date'] = raw_pred_df['date'].dt.date
+        start_date = raw_pred_df.date.min()
+
+        # Get the 1-min data
+        tick_data = sd.get_tick_data(scrip, from_date=start_date)
+
+        # Get the Daily data (base data)
+        if self.mode == "BACKTEST":
+            base_data = sd.get_base_data(scrip, from_date=start_date)
+        else:
+            # For NEXT-CLOSE we won't have base date at COB
+            # Last candle of the day is closing price for the day! However, time of day is 1st candle's epoch
+            base_data = tick_data.iloc[-1:]
+            base_data.loc[:, 'time'] = tick_data.iloc[0]['time']
+        base_data = base_data[['time', 'close']]
+        base_data.rename(columns={"close": "day_close"}, inplace=True)
+
+        # Get Previous day close populated to allow for bol_signal_strength calc
+        raw_pred_df = pd.merge(raw_pred_df, base_data, how="left", left_on='time', right_on='time')
+        raw_pred_df.rename(columns={"day_close": "prev_day_close"}, inplace=True)
+
         if len(raw_pred_df) > 1:
             # This would be a backtest prediction file
-            raw_pred_df = raw_pred_df[['target', 'signal', 'time']]
+            raw_pred_df = raw_pred_df[['target', 'signal', 'time', 'date', 'prev_day_close']]
+            # Since the prediction happens for next working day - need to shift the time up by 1 row
             raw_pred_df['time'] = raw_pred_df['time'].shift(-1)
         else:
             # This would be Next Close file
             pass
 
         raw_pred_df.rename(columns={"target": "pred_target"}, inplace=True)
-        raw_pred_df['date'] = pd.to_datetime(raw_pred_df['time'], unit='s', utc=True)
-        raw_pred_df['date'] = raw_pred_df['date'].dt.tz_convert(IST)
-        raw_pred_df['date'] = raw_pred_df['date'].dt.date
         # Remove last row after offset of time
         raw_pred_df.dropna(subset=['date'], inplace=True)
 
-        # Get 1-Min data (tick data) and join with raw_pred_df
-        start_date = raw_pred_df.date.min()
-        tick_data = sd.get_tick_data(scrip, from_date=start_date)
+        # Join tick data with raw_pred_df
         merged_df = pd.merge(tick_data, raw_pred_df, how='left', left_on='time', right_on='time')
         merged_df['datetime'] = pd.to_datetime(merged_df['time'], unit='s', utc=True)
         merged_df['datetime'] = merged_df['datetime'].dt.tz_convert(IST)
@@ -158,16 +179,9 @@ class FastBT:
         merged_df['cob_row'] = merged_df['cob_row'].fillna(0.0)
         # merged_df.set_index('datetime', inplace=True)
 
-        # Get the Daily data (base data) and join with merged DF this is to get the closing price for the day
-        if self.mode == "BACKTEST":
-            base_data = sd.get_base_data(scrip, from_date=start_date)
-        else:
-            # Last candle of the day is closing price for the day! However, time of day is 1st candle's epoch
-            base_data = tick_data.iloc[-1:]
-            base_data.loc[:, 'time'] = tick_data.iloc[0]['time']
-        base_data = base_data[['time', 'close']]
-        base_data.rename(columns={"close": "day_close"}, inplace=True)
+        # Join base data with raw_pred_df for getting day close
         merged_df = pd.merge(merged_df, base_data, how='left', left_on='time', right_on='time')
+
         if self.mode == "BACKTEST":
             # Remove 1st Row since we don't have closing from T-1
             merged_df = merged_df.iloc[1:]
@@ -319,6 +333,7 @@ class FastBT:
                 trades.loc[trade_idx, 'entry_price'] = rec.open
                 trades.loc[trade_idx, 'entry_time'] = rec.time
                 trades.loc[trade_idx, 'strength'] = get_strength(trades.iloc[trade_idx])
+                trades.loc[trade_idx, 'bod_strength'] = round(abs(rec.prev_day_close - rec.target), 2)
                 trades.loc[trade_idx, 'sl_update_cnt'] = 0
                 trades.loc[trade_idx, 'max_mtm'] = 0.0
                 trades.loc[trade_idx, 'max_mtm_pct'] = 0.0
@@ -470,12 +485,12 @@ if __name__ == '__main__':
             raw_pred_df_ = pd.read_csv(file)
             params_.append({"scrip": scrip_, "strategy": strategy_, "raw_pred_df": raw_pred_df_})
 
-    # bt_trades, bt_stats, bt_mtm = f.run_accuracy(params_)
-    # logger.info(f"bt_trades#: {len(bt_trades)}")
-    # logger.debug(f"bt_trades:\n{bt_trades}")
-    # logger.info(f"bt_stats#:{len(bt_stats)}")
-    # logger.debug(f"bt_stats:\n{bt_stats}")
-    # logger.info(f"bt_mtm#: {len(bt_mtm)}")
+    bt_trades, bt_stats, bt_mtm = f.run_accuracy(params_)
+    logger.info(f"bt_trades#: {len(bt_trades)}")
+    logger.debug(f"bt_trades:\n{bt_trades}")
+    logger.info(f"bt_stats#:{len(bt_stats)}")
+    logger.debug(f"bt_stats:\n{bt_stats}")
+    logger.info(f"bt_mtm#: {len(bt_mtm)}")
 
     # exit
 
