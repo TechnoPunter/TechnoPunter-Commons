@@ -8,7 +8,7 @@ from commons.consts.consts import *
 from commons.dataprovider.ScripData import ScripData
 from commons.dataprovider.database import DatabaseEngine
 from commons.service.RiskCalc import RiskCalc
-from commons.utils.Misc import get_bod_epoch, get_updated_sl
+from commons.utils.Misc import get_bod_epoch, get_updated_sl, remove_outliers
 
 MODEL_PREFIX = 'trainer.strategies.'
 FINAL_DF_COLS = [
@@ -205,6 +205,7 @@ class FastBT:
             l_pnl = 0
             l_avg_cost = 0.01
             l_pct_returns = 0.0
+            l_reward_factor = 1
             s_num_predictions = 0
             s_pct_success = 0
             s_valid_count = 0
@@ -212,6 +213,7 @@ class FastBT:
             s_pnl = 0
             s_avg_cost = 0.01
             s_pct_returns = 0.0
+            s_reward_factor = 1
             count = len(final_df)
             if len(final_df) > 0:
                 l_trades = final_df.loc[final_df.signal == 1]
@@ -224,6 +226,9 @@ class FastBT:
                         l_avg_cost = 0.0
                         l_pct_returns = 0.0
                     else:
+                        l_mtm_records = remove_outliers(l_trades['max_mtm'])
+                        l_reward_factor = round(
+                            l_mtm_records.sum() / l_trades['bod_strength'].loc[l_mtm_records.index].sum(), 2)
                         l_pct_entry = (l_valid_count / l_num_predictions) * 100
                         l_pct_entry = round(l_pct_entry, 2)
                         l_success = l_trades.loc[l_trades.status == 'TARGET-HIT']
@@ -243,6 +248,9 @@ class FastBT:
                         s_avg_cost = 0.0
                         s_pct_returns = 0.0
                     else:
+                        s_mtm_records = remove_outliers(s_trades['max_mtm'])
+                        s_reward_factor = round(
+                            s_mtm_records.sum() / s_trades['bod_strength'].loc[s_mtm_records.index].sum(), 2)
                         s_pct_entry = (s_valid_count / s_num_predictions) * 100
                         s_pct_entry = round(s_pct_entry, 2)
                         s_success = s_trades.loc[s_trades.status == 'TARGET-HIT']
@@ -257,9 +265,11 @@ class FastBT:
                 "l_num_predictions": l_num_predictions, "l_num_trades": l_valid_count,
                 "l_pct_success": l_pct_success, "l_pnl": l_pnl, "l_avg_cost": l_avg_cost,
                 "l_pct_returns": l_pct_returns, "l_pct_entry": l_pct_entry,
+                "l_reward_factor": l_reward_factor,
                 "s_num_predictions": s_num_predictions, "s_num_trades": s_valid_count,
                 "s_pct_success": s_pct_success, "s_pnl": s_pnl, "s_avg_cost": s_avg_cost,
-                "s_pct_returns": s_pct_returns, "s_pct_entry": s_pct_entry
+                "s_pct_returns": s_pct_returns, "s_pct_entry": s_pct_entry,
+                "s_reward_factor": s_reward_factor,
             })
         return pd.DataFrame(results)
 
