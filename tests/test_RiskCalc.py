@@ -1,8 +1,4 @@
-import json
-import os
-import unittest
-
-import pandas as pd
+from Utils import *
 
 if os.path.exists('/var/www/trade-exec-engine/resources/test'):
     REPO_DIR = '/var/www/trade-exec-engine/resources/test'
@@ -18,20 +14,6 @@ os.environ["LOG_PATH"] = os.path.join(REPO_DIR, "logs")
 os.environ["RESOURCE_PATH"] = os.path.join(TEST_RESOURCE_DIR, "risk-calc/config")
 
 from commons.service.RiskCalc import RiskCalc
-
-
-def read_file(name, ret_type: str = "JSON"):
-    res_file_path = os.path.join(TEST_RESOURCE_DIR, name)
-    with open(res_file_path, 'r') as file:
-        result = file.read()
-        if ret_type == "DF":
-            return pd.DataFrame(json.loads(result))
-        else:
-            return json.loads(result)
-
-
-def read_file_df(name):
-    return read_file(name, ret_type="DF")
 
 
 class TestRiskCalc(unittest.TestCase):
@@ -95,6 +77,26 @@ class TestRiskCalc(unittest.TestCase):
         self.assertEqual('1.00', t_r, "Reward is not matching")
         self.assertEqual('0.50', sl_r, "SL is not matching")
         self.assertEqual('0.15', t_sl_r, "T-SL is not matching")
+
+    def test_calc_risk_params_accuracy(self):
+        accu_df = read_file_df("risk-calc/Portfolio-Accuracy.csv")
+        rc = RiskCalc(accuracy=accu_df)
+
+        scrip = "NSE_APOLLOHOSP"
+        strategy = "trainer.strategies.rfcV2"
+        signal = 1
+        trade_dt = "2023-10-05"
+        tick = 0.05
+        acct = "X"
+        entry = 100.00
+        pred_target = 101.00
+
+        t_r, sl_r, t_sl_r = rc.calc_risk_params(scrip=scrip, strategy=strategy, signal=signal, tick=tick, acct=acct,
+                                                entry=entry, pred_target=pred_target, risk_date=trade_dt)
+
+        self.assertEqual('3.60', t_r, "Reward is not matching")
+        self.assertEqual('0.90', sl_r, "SL is not matching")
+        self.assertEqual('0.25', t_sl_r, "T-SL is not matching")
 
 
 if __name__ == '__main__':
