@@ -227,8 +227,9 @@ class FastBT:
                         l_pct_returns = 0.0
                     else:
                         l_mtm_records = remove_outliers(l_trades['max_mtm'])
-                        l_reward_factor = round(
-                            1 - l_mtm_records.sum() / l_trades['bod_strength'].loc[l_mtm_records.index].sum(), 2)
+                        if len(l_mtm_records) > 0:
+                            l_reward_factor = round(
+                                1 - l_mtm_records.sum() / l_trades['bod_strength'].loc[l_mtm_records.index].sum(), 2)
                         l_pct_entry = (l_valid_count / l_num_predictions) * 100
                         l_pct_entry = round(l_pct_entry, 2)
                         l_success = l_trades.loc[l_trades.status == 'TARGET-HIT']
@@ -249,8 +250,9 @@ class FastBT:
                         s_pct_returns = 0.0
                     else:
                         s_mtm_records = remove_outliers(s_trades['max_mtm'])
-                        s_reward_factor = round(
-                            1 - s_mtm_records.sum() / s_trades['bod_strength'].loc[s_mtm_records.index].sum(), 2)
+                        if len(s_mtm_records) > 0:
+                            s_reward_factor = round(
+                                1 - s_mtm_records.sum() / s_trades['bod_strength'].loc[s_mtm_records.index].sum(), 2)
                         s_pct_entry = (s_valid_count / s_num_predictions) * 100
                         s_pct_entry = round(s_pct_entry, 2)
                         s_success = s_trades.loc[s_trades.status == 'TARGET-HIT']
