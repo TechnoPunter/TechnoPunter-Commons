@@ -125,10 +125,10 @@ def calc_mtm_df(row):
 class FastBT:
     rc: RiskCalc
 
-    def __init__(self, exec_mode: str = MODE):
+    def __init__(self, exec_mode: str = MODE, accuracy_df: pd.DataFrame = None):
         self.mode = "BACKTEST"  # "NEXT-CLOSE"
         self.exec_mode = exec_mode
-        self.rc = RiskCalc()
+        self.rc = RiskCalc(accuracy=accuracy_df)
 
     def prep_data(self, scrip, strategy, raw_pred_df: pd.DataFrame, sd: ScripData):
         logger.info(f"Entering Prep data for {scrip} with {len(raw_pred_df)} predictions")
