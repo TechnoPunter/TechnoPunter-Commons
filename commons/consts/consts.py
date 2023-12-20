@@ -41,7 +41,8 @@ TRADE_LOG = "TradeLog"
 
 # Trainer Paths
 SUMMARY_PATH = os.path.join(_cfg['generated'], 'summary')
-ACCURACY_FILE = os.path.join(SUMMARY_PATH, 'Portfolio-Accuracy.csv')
+BASE_ACCURACY_FILE = os.path.join(SUMMARY_PATH, 'Portfolio-Base-Accuracy.csv')
+RF_ACCURACY_FILE = os.path.join(SUMMARY_PATH, 'Portfolio-Reward-Factor-Accuracy.csv')
 TRADES_FILE = os.path.join(SUMMARY_PATH, 'Portfolio-Trades.csv')
 TRADES_MTM_FILE = os.path.join(SUMMARY_PATH, 'Portfolio-Trades-MTM.csv')
 
