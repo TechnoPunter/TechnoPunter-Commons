@@ -17,15 +17,24 @@ from commons.service.RiskCalc import RiskCalc
 
 
 class TestRiskCalc(unittest.TestCase):
-    rc = RiskCalc()
 
     def test_risk_calc(self):
-        risk_params = self.rc.risk_params
+        rc = RiskCalc(mode="PRESET")
+        risk_params = rc.risk_params
         result = read_file("risk-calc/expected-risk-params.json")
         self.assertEqual(result, risk_params)
 
+    def test_risk_calc_default(self):
+        rc = RiskCalc(mode="DEFAULT")
+        actual_rf = rc.default_reward_factor
+        actual_rrr = rc.default_risk_reward_ratio
+        actual_tsl = rc.default_trail_sl_factor
+        self.assertEqual(0.0, actual_rf)
+        self.assertEqual(1.0, actual_rrr)
+        self.assertEqual(0.5, actual_tsl)
+
     def test_calc_risk_params_scrip_default(self):
-        rc = RiskCalc()
+        rc = RiskCalc(mode="PRESET")
 
         scrip = "NSE_APOLLOHOSP"
         strategy = "trainer.strategies.gspcV2"
@@ -43,7 +52,7 @@ class TestRiskCalc(unittest.TestCase):
         self.assertEqual('0.25', t_sl_r, "T-SL is not matching")
 
     def test_calc_risk_params_acct(self):
-        rc = RiskCalc()
+        rc = RiskCalc(mode="PRESET")
 
         scrip = "NSE_APOLLOHOSP"
         strategy = "trainer.strategies.gspcV2"
@@ -61,7 +70,7 @@ class TestRiskCalc(unittest.TestCase):
         self.assertEqual('0.20', t_sl_r, "T-SL is not matching")
 
     def test_calc_risk_params_fallback(self):
-        rc = RiskCalc()
+        rc = RiskCalc(mode="PRESET")
 
         scrip = "X"
         strategy = "Y"
@@ -80,7 +89,7 @@ class TestRiskCalc(unittest.TestCase):
 
     def test_calc_risk_params_accuracy(self):
         accu_df = read_file_df("risk-calc/Portfolio-Accuracy.csv")
-        rc = RiskCalc(accuracy=accu_df)
+        rc = RiskCalc(mode="PRESET", accuracy=accu_df)
 
         scrip = "NSE_APOLLOHOSP"
         strategy = "trainer.strategies.rfcV2"

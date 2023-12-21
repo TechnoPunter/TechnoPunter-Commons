@@ -16,10 +16,13 @@ class RiskCalc:
     default_risk_reward_ratio: float
     default_trail_sl_factor: float
 
-    def __init__(self, accuracy: pd.DataFrame = None):
+    def __init__(self, mode: str = "DEFAULT", accuracy: pd.DataFrame = None):
+        """
+        :param mode: Can be DEFAULT for Risk Param defaults or PRESET for individually set Risk params
+        """
         logger.debug(f"Starting RiskCalc")
         self.risk_params = {}
-        self.__build_risk_params()
+        self.__build_risk_params(mode)
         if accuracy is None:
             self.accuracy = pd.DataFrame()
         else:
@@ -47,9 +50,12 @@ class RiskCalc:
         comb_accu_df.fillna(0, inplace=True)
         return comb_accu_df
 
-    def __build_risk_params(self):
+    def __build_risk_params(self, mode: str):
         logger.debug(f"Starting __build_risk_params")
-        r_cfg = cfg['risk-params']
+        if mode == "DEFAULT":
+            r_cfg = cfg['risk-param-defaults']
+        else:
+            r_cfg = cfg['risk-params']
         default_accounts = r_cfg.get('accounts')
         defaults = r_cfg.get('defaults')
         logger.debug(f"r_cfg:\n{r_cfg}\nDefaults:\n{defaults}")
@@ -58,7 +64,7 @@ class RiskCalc:
         self.default_risk_reward_ratio = defaults.get('risk_reward_ratio')
         self.default_trail_sl_factor = defaults.get('trail_sl_factor')
 
-        for scrip in r_cfg.get('scrips'):
+        for scrip in r_cfg.get('scrips', []):
             scrip_name = scrip.get('scripName')
             for model in scrip.get('models'):
                 model_name = model.get('name')
