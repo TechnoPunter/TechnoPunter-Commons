@@ -125,10 +125,10 @@ def calc_mtm_df(row):
 class FastBT:
     rc: RiskCalc
 
-    def __init__(self, exec_mode: str = MODE, accuracy_df: pd.DataFrame = None):
+    def __init__(self, exec_mode: str = MODE, risk_mode: str = "PRESET", accuracy_df: pd.DataFrame = None):
         self.mode = "BACKTEST"  # "NEXT-CLOSE"
         self.exec_mode = exec_mode
-        self.rc = RiskCalc(accuracy=accuracy_df)
+        self.rc = RiskCalc(mode=risk_mode, accuracy=accuracy_df)
 
     def prep_data(self, scrip, strategy, raw_pred_df: pd.DataFrame, sd: ScripData):
         logger.info(f"Entering Prep data for {scrip} with {len(raw_pred_df)} predictions")
@@ -229,7 +229,7 @@ class FastBT:
                         l_mtm_records = remove_outliers(l_trades['max_mtm'])
                         if len(l_mtm_records) > 0:
                             l_reward_factor = round(
-                                1 - l_mtm_records.sum() / l_trades['bod_strength'].loc[l_mtm_records.index].sum(), 2)
+                                (l_mtm_records.sum() / l_trades['bod_strength'].loc[l_mtm_records.index].sum()) - 1, 2)
                         l_pct_entry = (l_valid_count / l_num_predictions) * 100
                         l_pct_entry = round(l_pct_entry, 2)
                         l_success = l_trades.loc[l_trades.status == 'TARGET-HIT']
@@ -252,7 +252,7 @@ class FastBT:
                         s_mtm_records = remove_outliers(s_trades['max_mtm'])
                         if len(s_mtm_records) > 0:
                             s_reward_factor = round(
-                                1 - s_mtm_records.sum() / s_trades['bod_strength'].loc[s_mtm_records.index].sum(), 2)
+                                (s_mtm_records.sum() / s_trades['bod_strength'].loc[s_mtm_records.index].sum()) - 1, 2)
                         s_pct_entry = (s_valid_count / s_num_predictions) * 100
                         s_pct_entry = round(s_pct_entry, 2)
                         s_success = s_trades.loc[s_trades.status == 'TARGET-HIT']
@@ -493,7 +493,7 @@ if __name__ == '__main__':
     params_ = []
     for scrip_ in cfg['steps']['scrips']:
         for strategy_ in cfg['steps']['strats']:
-            file = os.path.join(cfg['generated'], scrip_, f'trainer.strategies.{strategy_}.{scrip_}_Raw_Pred.csv')
+            file = str(os.path.join(cfg['generated'], scrip_, f'trainer.strategies.{strategy_}.{scrip_}_Raw_Pred.csv'))
             raw_pred_df_ = pd.read_csv(file)
             params_.append({"scrip": scrip_, "strategy": strategy_, "raw_pred_df": raw_pred_df_})
 
