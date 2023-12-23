@@ -145,7 +145,7 @@ class RiskCalc:
             return round_price(factor, tick=tick, scrip=scrip), "0.00", "0.00"
 
         if risk_date is not None:
-            key = ":".join([scrip, strategy, str(signal), risk_date])
+            key = ":".join([scrip, strategy, str(int(signal)), risk_date])
             logger.debug(f"Accuracy based Key: {key}")
 
             try:
