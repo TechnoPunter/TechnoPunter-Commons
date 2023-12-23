@@ -2,6 +2,9 @@ import datetime
 import logging
 import time
 
+import numpy as np
+import pandas as pd
+
 from commons.consts.consts import IST
 
 logger = logging.getLogger(__name__)
@@ -90,3 +93,14 @@ def get_updated_sl(rec: dict, low: float, high: float) -> str:
     else:
         logger.debug(f"get_new_sl: Same sl for {rec['scrip']} @ {ltp}")
         return "0.0"
+
+
+def remove_outliers(data: pd.Series, lower_cutoff: int = 25, higher_cutoff: int = 75):
+    q3, q1 = np.percentile(data, q=[higher_cutoff, lower_cutoff])
+    iqr = q3 - q1
+
+    upper_bound = q3 + 1.5 * iqr
+    lower_bound = q1 - 1.5 * iqr
+
+    result = data[(data < upper_bound) & (data > lower_bound)]
+    return result

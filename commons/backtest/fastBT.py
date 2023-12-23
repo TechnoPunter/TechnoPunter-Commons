@@ -8,7 +8,7 @@ from commons.consts.consts import *
 from commons.dataprovider.ScripData import ScripData
 from commons.dataprovider.database import DatabaseEngine
 from commons.service.RiskCalc import RiskCalc
-from commons.utils.Misc import get_bod_epoch, get_updated_sl
+from commons.utils.Misc import get_bod_epoch, get_updated_sl, remove_outliers
 
 MODEL_PREFIX = 'trainer.strategies.'
 FINAL_DF_COLS = [
@@ -125,10 +125,15 @@ def calc_mtm_df(row):
 class FastBT:
     rc: RiskCalc
 
-    def __init__(self, exec_mode: str = MODE):
+    def __init__(self, exec_mode: str = MODE, risk_mode: str = "PRESET", accuracy_df: pd.DataFrame = None,
+                 scrip_data: ScripData = None):
         self.mode = "BACKTEST"  # "NEXT-CLOSE"
         self.exec_mode = exec_mode
-        self.rc = RiskCalc()
+        self.rc = RiskCalc(mode=risk_mode, accuracy=accuracy_df)
+        if scrip_data is None:
+            self.sd = ScripData()
+        else:
+            self.sd = scrip_data
 
     def prep_data(self, scrip, strategy, raw_pred_df: pd.DataFrame, sd: ScripData):
         logger.info(f"Entering Prep data for {scrip} with {len(raw_pred_df)} predictions")
@@ -205,6 +210,7 @@ class FastBT:
             l_pnl = 0
             l_avg_cost = 0.01
             l_pct_returns = 0.0
+            l_reward_factor = 0
             s_num_predictions = 0
             s_pct_success = 0
             s_valid_count = 0
@@ -212,6 +218,7 @@ class FastBT:
             s_pnl = 0
             s_avg_cost = 0.01
             s_pct_returns = 0.0
+            s_reward_factor = 0
             count = len(final_df)
             if len(final_df) > 0:
                 l_trades = final_df.loc[final_df.signal == 1]
@@ -224,6 +231,10 @@ class FastBT:
                         l_avg_cost = 0.0
                         l_pct_returns = 0.0
                     else:
+                        l_mtm_records = remove_outliers(l_trades['max_mtm'])
+                        if len(l_mtm_records) > 0:
+                            l_reward_factor = round(
+                                (l_mtm_records.sum() / l_trades['bod_strength'].loc[l_mtm_records.index].sum()) - 1, 2)
                         l_pct_entry = (l_valid_count / l_num_predictions) * 100
                         l_pct_entry = round(l_pct_entry, 2)
                         l_success = l_trades.loc[l_trades.status == 'TARGET-HIT']
@@ -243,6 +254,10 @@ class FastBT:
                         s_avg_cost = 0.0
                         s_pct_returns = 0.0
                     else:
+                        s_mtm_records = remove_outliers(s_trades['max_mtm'])
+                        if len(s_mtm_records) > 0:
+                            s_reward_factor = round(
+                                (s_mtm_records.sum() / s_trades['bod_strength'].loc[s_mtm_records.index].sum()) - 1, 2)
                         s_pct_entry = (s_valid_count / s_num_predictions) * 100
                         s_pct_entry = round(s_pct_entry, 2)
                         s_success = s_trades.loc[s_trades.status == 'TARGET-HIT']
@@ -257,9 +272,11 @@ class FastBT:
                 "l_num_predictions": l_num_predictions, "l_num_trades": l_valid_count,
                 "l_pct_success": l_pct_success, "l_pnl": l_pnl, "l_avg_cost": l_avg_cost,
                 "l_pct_returns": l_pct_returns, "l_pct_entry": l_pct_entry,
+                "l_reward_factor": l_reward_factor,
                 "s_num_predictions": s_num_predictions, "s_num_trades": s_valid_count,
                 "s_pct_success": s_pct_success, "s_pnl": s_pnl, "s_avg_cost": s_avg_cost,
-                "s_pct_returns": s_pct_returns, "s_pct_entry": s_pct_entry
+                "s_pct_returns": s_pct_returns, "s_pct_entry": s_pct_entry,
+                "s_reward_factor": s_reward_factor,
             })
         return pd.DataFrame(results)
 
@@ -268,7 +285,7 @@ class FastBT:
         for idx, rec in result.loc[pd.notnull(result.signal)].iterrows():
             t_r, sl_r, t_sl_r = self.rc.calc_risk_params(scrip=rec.scrip, strategy=rec.strategy, signal=rec.signal,
                                                          tick=0.05, acct=acct, entry=rec.open,
-                                                         pred_target=rec.pred_target)
+                                                         pred_target=rec.pred_target, risk_date=str(rec.date))
             result.loc[idx, ['target_range', 'sl_range', 'trail_sl']] = float(t_r), float(sl_r), float(t_sl_r)
 
         return result
@@ -383,7 +400,6 @@ class FastBT:
     def run_accuracy(self, params: list[dict]):
         logger.info(f"run_accuracy: Started with {len(params)} scrips")
         self.mode = "BACKTEST"
-        sd = ScripData()
 
         if len(params) == 0:
             logger.error(f"Unable to proceed since Params is empty")
@@ -397,7 +413,7 @@ class FastBT:
             scrip = param.get('scrip')
             raw_pred_df = param.get('raw_pred_df')
             logger.info(f"Getting dict based results for {scrip} & {strategy}")
-            merged_df = self.prep_data(scrip, strategy, raw_pred_df=raw_pred_df, sd=sd)
+            merged_df = self.prep_data(scrip, strategy, raw_pred_df=raw_pred_df, sd=self.sd)
             accuracy_params.append({"scrip": scrip, "strategy": strategy, "merged_df": merged_df})
         if self.exec_mode == "SERVER":
             try:
@@ -424,7 +440,7 @@ class FastBT:
     def run_cob_accuracy(self, params: pd.DataFrame):
         logger.info(f"run_accuracy: Started with {len(params)} scrips")
         self.mode = "NEXT-CLOSE"
-        sd = ScripData()
+
         if len(params) == 0:
             logger.error(f"Unable to proceed since Params is empty")
             return
@@ -443,7 +459,7 @@ class FastBT:
             trade_date = datetime.datetime.fromtimestamp(int(rec.get('entry_ts')))
             trade_time = get_bod_epoch(trade_date.strftime('%Y-%m-%d'))
             df.loc[:, 'time'] = trade_time
-            merged_df = self.prep_data(scrip, strategy, raw_pred_df=df[['target', 'signal', 'time']], sd=sd)
+            merged_df = self.prep_data(scrip, strategy, raw_pred_df=df[['target', 'signal', 'time']], sd=self.sd)
             accuracy_params.append({"scrip": scrip, "strategy": strategy, "merged_df": merged_df})
         if self.mode == "SERVER":
             try:
@@ -481,7 +497,7 @@ if __name__ == '__main__':
     params_ = []
     for scrip_ in cfg['steps']['scrips']:
         for strategy_ in cfg['steps']['strats']:
-            file = os.path.join(cfg['generated'], scrip_, f'trainer.strategies.{strategy_}.{scrip_}_Raw_Pred.csv')
+            file = str(os.path.join(cfg['generated'], scrip_, f'trainer.strategies.{strategy_}.{scrip_}_Raw_Pred.csv'))
             raw_pred_df_ = pd.read_csv(file)
             params_.append({"scrip": scrip_, "strategy": strategy_, "raw_pred_df": raw_pred_df_})
 
