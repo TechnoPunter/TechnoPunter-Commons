@@ -125,10 +125,15 @@ def calc_mtm_df(row):
 class FastBT:
     rc: RiskCalc
 
-    def __init__(self, exec_mode: str = MODE, risk_mode: str = "PRESET", accuracy_df: pd.DataFrame = None):
+    def __init__(self, exec_mode: str = MODE, risk_mode: str = "PRESET", accuracy_df: pd.DataFrame = None,
+                 sd: ScripData = None):
         self.mode = "BACKTEST"  # "NEXT-CLOSE"
         self.exec_mode = exec_mode
         self.rc = RiskCalc(mode=risk_mode, accuracy=accuracy_df)
+        if sd is None:
+            self.sd = ScripData()
+        else:
+            self.sd = sd
 
     def prep_data(self, scrip, strategy, raw_pred_df: pd.DataFrame, sd: ScripData):
         logger.info(f"Entering Prep data for {scrip} with {len(raw_pred_df)} predictions")
@@ -395,7 +400,6 @@ class FastBT:
     def run_accuracy(self, params: list[dict]):
         logger.info(f"run_accuracy: Started with {len(params)} scrips")
         self.mode = "BACKTEST"
-        sd = ScripData()
 
         if len(params) == 0:
             logger.error(f"Unable to proceed since Params is empty")
@@ -409,7 +413,7 @@ class FastBT:
             scrip = param.get('scrip')
             raw_pred_df = param.get('raw_pred_df')
             logger.info(f"Getting dict based results for {scrip} & {strategy}")
-            merged_df = self.prep_data(scrip, strategy, raw_pred_df=raw_pred_df, sd=sd)
+            merged_df = self.prep_data(scrip, strategy, raw_pred_df=raw_pred_df, sd=self.sd)
             accuracy_params.append({"scrip": scrip, "strategy": strategy, "merged_df": merged_df})
         if self.exec_mode == "SERVER":
             try:
@@ -436,7 +440,7 @@ class FastBT:
     def run_cob_accuracy(self, params: pd.DataFrame):
         logger.info(f"run_accuracy: Started with {len(params)} scrips")
         self.mode = "NEXT-CLOSE"
-        sd = ScripData()
+
         if len(params) == 0:
             logger.error(f"Unable to proceed since Params is empty")
             return
@@ -455,7 +459,7 @@ class FastBT:
             trade_date = datetime.datetime.fromtimestamp(int(rec.get('entry_ts')))
             trade_time = get_bod_epoch(trade_date.strftime('%Y-%m-%d'))
             df.loc[:, 'time'] = trade_time
-            merged_df = self.prep_data(scrip, strategy, raw_pred_df=df[['target', 'signal', 'time']], sd=sd)
+            merged_df = self.prep_data(scrip, strategy, raw_pred_df=df[['target', 'signal', 'time']], sd=self.sd)
             accuracy_params.append({"scrip": scrip, "strategy": strategy, "merged_df": merged_df})
         if self.mode == "SERVER":
             try:
