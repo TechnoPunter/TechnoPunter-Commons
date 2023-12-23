@@ -285,7 +285,7 @@ class FastBT:
         for idx, rec in result.loc[pd.notnull(result.signal)].iterrows():
             t_r, sl_r, t_sl_r = self.rc.calc_risk_params(scrip=rec.scrip, strategy=rec.strategy, signal=rec.signal,
                                                          tick=0.05, acct=acct, entry=rec.open,
-                                                         pred_target=rec.pred_target, risk_date=rec.date)
+                                                         pred_target=rec.pred_target, risk_date=str(rec.date))
             result.loc[idx, ['target_range', 'sl_range', 'trail_sl']] = float(t_r), float(sl_r), float(t_sl_r)
 
         return result
