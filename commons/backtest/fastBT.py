@@ -126,14 +126,14 @@ class FastBT:
     rc: RiskCalc
 
     def __init__(self, exec_mode: str = MODE, risk_mode: str = "PRESET", accuracy_df: pd.DataFrame = None,
-                 sd: ScripData = None):
+                 scrip_data: ScripData = None):
         self.mode = "BACKTEST"  # "NEXT-CLOSE"
         self.exec_mode = exec_mode
         self.rc = RiskCalc(mode=risk_mode, accuracy=accuracy_df)
-        if sd is None:
+        if scrip_data is None:
             self.sd = ScripData()
         else:
-            self.sd = sd
+            self.sd = scrip_data
 
     def prep_data(self, scrip, strategy, raw_pred_df: pd.DataFrame, sd: ScripData):
         logger.info(f"Entering Prep data for {scrip} with {len(raw_pred_df)} predictions")
