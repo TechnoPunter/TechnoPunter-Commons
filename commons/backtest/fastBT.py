@@ -1,4 +1,5 @@
 import logging
+import multiprocessing
 from multiprocessing import Pool
 
 import pandas as pd
@@ -418,7 +419,7 @@ class FastBT:
         if self.exec_mode == "SERVER":
             try:
                 logger.info(f"About to start accuracy calc with {len(accuracy_params)} objects")
-                pool = Pool()
+                pool = Pool(processes=multiprocessing.cpu_count())
                 result_set = pool.imap(self.get_accuracy, accuracy_params)
                 for key, trade, stat, mtm_df in result_set:
                     trades.append(trade)
