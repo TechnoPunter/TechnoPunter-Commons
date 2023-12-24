@@ -18,7 +18,7 @@ class TestGetBTResult(unittest.TestCase):
         output_df = df.copy()
         return output_df.astype(object)
 
-    def test_get_accuracy(self):
+    def test_get_bt_result(self):
         """
 
         Scenarios:
