@@ -1,6 +1,8 @@
 from unittest.mock import patch
 
 from tests.Utils import *
+from commons.service.RiskCalc import RiskCalc
+from commons.backtest.getBTResult import calc_stats, get_bt_result
 from commons.backtest.fastBT import FastBT
 from commons.loggers.setup_logger import setup_logging
 
@@ -59,8 +61,10 @@ class TestFastBT(unittest.TestCase):
         merged_df = read_file_df("fastBT/merged_df.csv")
         expected_df = read_file_df("fastBT/expected_trade_df.csv")
         expected_mtm_df = read_file_df("fastBT/expected_mtm_df.csv")
-        param = {"scrip": self.scrip, "strategy": self.strategy, "merged_df": merged_df, "count": self.count}
-        key, trades, stat, mtm_df = self.fb.get_accuracy(param)
+        rc = RiskCalc(mode="PRESET")
+        param = {"scrip": self.scrip, "strategy": self.strategy, "merged_df": merged_df, "count": self.count,
+                 "risk_calc": rc}
+        key, trades, stat, mtm_df = get_bt_result(param)
         pd.testing.assert_frame_equal(self.__format_df(expected_df), self.__format_df(trades))
         pd.testing.assert_frame_equal(expected_mtm_df, mtm_df)
 
@@ -68,7 +72,7 @@ class TestFastBT(unittest.TestCase):
         trades_df = read_file_df("fastBT/expected_trade_df.csv")
         expected_stats = read_file_df("fastBT/expected_stats.csv")
 
-        ret_val = self.fb.calc_stats(input_df=trades_df, scrip=self.scrip, strategy=self.strategy)
+        ret_val = calc_stats(input_df=trades_df, scrip=self.scrip, strategy=self.strategy)
         pd.testing.assert_frame_equal(ret_val, expected_stats)
 
     # @patch('commons.dataprovider.ScripData.ScripData.get_base_data')
