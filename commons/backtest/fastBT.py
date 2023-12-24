@@ -161,17 +161,17 @@ class FastBT:
             accuracy_params.append({"scrip": scrip, "strategy": strategy, "merged_df": merged_df, "risk_calc": self.rc})
         if self.mode == "SERVER":
             try:
-                pool = Pool()
-                for result in pool.imap(get_bt_result, accuracy_params):
-                    key, trade, stat, mtm_df = result
-                    trades.append(trade)
-                    stats.append(stat)
-                    mtm[key] = mtm_df
+                with Pool() as pool:
+                    for result in pool.imap(get_bt_result, accuracy_params):
+                        key, trade, stat, mtm_df = result
+                        trades.append(trade)
+                        stats.append(stat)
+                        mtm[key] = mtm_df
             except Exception as ex:
                 logger.error(f"Error in Multi Processing {ex}")
         else:
-            for param in accuracy_params:
-                key, trade, stat, mtm_df = get_bt_result(param)
+            for accu_param in accuracy_params:
+                key, trade, stat, mtm_df = get_bt_result(accu_param)
                 trades.append(trade)
                 stats.append(stat)
                 mtm[key] = mtm_df
