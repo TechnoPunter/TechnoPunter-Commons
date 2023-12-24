@@ -7,7 +7,6 @@ import pandas as pd
 from commons.config.reader import cfg
 from commons.consts.consts import *
 from commons.dataprovider.ScripData import ScripData
-from commons.dataprovider.database import DatabaseEngine
 from commons.service.RiskCalc import RiskCalc
 from commons.utils.Misc import get_bod_epoch, get_updated_sl, remove_outliers
 
@@ -512,6 +511,7 @@ if __name__ == '__main__':
     # exit
 
     from commons.service.LogService import LogService
+    from commons.dataprovider.database import DatabaseEngine
 
     acct_ = 'Trader-V2-Pralhad'
     dt_ = '2023-12-01'
