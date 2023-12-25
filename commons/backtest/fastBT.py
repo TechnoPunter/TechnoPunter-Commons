@@ -32,8 +32,11 @@ class FastBT:
         else:
             self.sd = scrip_data
 
-    def prep_data(self, scrip, strategy, raw_pred_df: pd.DataFrame, sd: ScripData):
+    def prep_data(self, scrip, strategy, raw_pred_df: pd.DataFrame, sd: ScripData = None):
         logger.info(f"Entering Prep data for {scrip} with {len(raw_pred_df)} predictions")
+
+        if sd is None:
+            sd = self.sd
 
         # Need date for fetch data and readability
         raw_pred_df['date'] = pd.to_datetime(raw_pred_df['time'], unit='s', utc=True)
@@ -108,9 +111,7 @@ class FastBT:
         for param in params:
             strategy = param.get('strategy')
             scrip = param.get('scrip')
-            raw_pred_df = param.get('raw_pred_df')
-            logger.info(f"Getting dict based results for {scrip} & {strategy}")
-            merged_df = self.prep_data(scrip, strategy, raw_pred_df=raw_pred_df, sd=self.sd)
+            merged_df = param.get('merged_df')
             accuracy_params.append({"scrip": scrip, "strategy": strategy, "merged_df": merged_df, "risk_calc": self.rc})
         if self.exec_mode == "SERVER":
             try:
@@ -197,7 +198,8 @@ if __name__ == '__main__':
         for strategy_ in cfg['steps']['strats']:
             file = str(os.path.join(cfg['generated'], scrip_, f'trainer.strategies.{strategy_}.{scrip_}_Raw_Pred.csv'))
             raw_pred_df_ = pd.read_csv(file)
-            params_.append({"scrip": scrip_, "strategy": strategy_, "raw_pred_df": raw_pred_df_})
+            merged_df_ = f.prep_data(scrip=scrip_, strategy=MODEL_PREFIX + strategy_, raw_pred_df=raw_pred_df_)
+            params_.append({"scrip": scrip_, "strategy": strategy_, "merged_df": merged_df_})
 
     bt_trades, bt_stats, bt_mtm = f.run_accuracy(params_)
     logger.info(f"bt_trades#: {len(bt_trades)}")
