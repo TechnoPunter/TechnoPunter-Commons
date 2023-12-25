@@ -73,7 +73,7 @@ class RiskCalc:
                 risk_reward_ratio = model.get('risk_reward_ratio')
                 trail_sl_factor = model.get('trail_sl_factor')
                 override_accounts = []
-                for acct in model.get('accounts'):
+                for acct in model.get('accounts', []):
                     acct_name = acct.get('name')
                     key = ":".join([scrip_name, model_name, signal, acct_name])
                     acct_reward_factor = acct.get('reward_factor', reward_factor)
