@@ -73,7 +73,7 @@ class RiskCalc:
                 risk_reward_ratio = model.get('risk_reward_ratio')
                 trail_sl_factor = model.get('trail_sl_factor')
                 override_accounts = []
-                for acct in model.get('accounts'):
+                for acct in model.get('accounts', []):
                     acct_name = acct.get('name')
                     key = ":".join([scrip_name, model_name, signal, acct_name])
                     acct_reward_factor = acct.get('reward_factor', reward_factor)
@@ -196,7 +196,7 @@ if __name__ == '__main__':
     setup_logging("risk-calc.log")
     accu_df_ = pd.read_csv("/Users/pralhad/Documents/99-src/98-trading/TechnoPunter-Commons/"
                            "resources/test/risk-calc/Portfolio-Accuracy.csv")
-    rc = RiskCalc(accu_df_)
+    rc = RiskCalc(mode="PRESET", accuracy=accu_df_)
     _scrip = "X"
     _strategy = "Y"
     _signal = 1
