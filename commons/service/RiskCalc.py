@@ -196,7 +196,7 @@ if __name__ == '__main__':
     setup_logging("risk-calc.log")
     accu_df_ = pd.read_csv("/Users/pralhad/Documents/99-src/98-trading/TechnoPunter-Commons/"
                            "resources/test/risk-calc/Portfolio-Accuracy.csv")
-    rc = RiskCalc(accu_df_)
+    rc = RiskCalc(mode="PRESET", accuracy=accu_df_)
     _scrip = "X"
     _strategy = "Y"
     _signal = 1
