@@ -186,7 +186,8 @@ class RiskCalc:
         ret_adj_target_range = round_price(price=adj_target_range, tick=tick, scrip=scrip)
         ret_adj_sl_range = round_price(price=adj_sl_range, tick=tick, scrip=scrip)
         ret_adj_trail_sl_range = round_price(price=adj_trail_sl_range, tick=tick, scrip=scrip)
-        logger.debug(f"Target:{ret_adj_target_range} SL:{ret_adj_sl_range} Trail SL: {ret_adj_trail_sl_range}")
+        logger.info(f"calc_risk_params: Key: {key} Params: {reward_factor}, {risk_reward_ratio}, {trail_sl_factor} "
+                    f"Target:{ret_adj_target_range} SL:{ret_adj_sl_range} Trail SL: {ret_adj_trail_sl_range}")
         return ret_adj_target_range, ret_adj_sl_range, ret_adj_trail_sl_range
 
 
