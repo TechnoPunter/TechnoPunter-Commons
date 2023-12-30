@@ -3,8 +3,8 @@ from sqlalchemy import Column, Integer, String, Numeric
 from commons.dataprovider.database import Base
 
 
-class BacktestAccuracy(Base):
-    __tablename__ = 'backtest_accuracy'
+class BacktestAccuracySummary(Base):
+    __tablename__ = 'bt_accuracy_summary'
 
     bt_accu_id = Column(Integer, primary_key=True)
 
