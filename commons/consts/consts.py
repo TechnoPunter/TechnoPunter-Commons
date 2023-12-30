@@ -21,6 +21,7 @@ MODEL_SAVE_FILE_NAME = '.sav'
 MODEL_PREFIX = 'trainer.strategies.'
 COLUMN_SEPARATOR = ","
 
+
 # Time Related
 IST = pytz.timezone('Asia/Kolkata')
 TODAY = datetime.datetime.today().date()
@@ -38,6 +39,8 @@ SCRIP_HIST = "ScripHist"
 PARAMS_HIST = "Params"
 TRADES_MTM_TABLE = "TradesMTM"
 TRADE_LOG = "TradeLog"
+BT_ACCURACY_SUMMARY = "BacktestAccuracySummary"
+BT_ACCURACY_TRADES = "BacktestAccuracyTrades"
 
 # Trainer Paths
 SUMMARY_PATH = os.path.join(_cfg['generated'], 'summary')
