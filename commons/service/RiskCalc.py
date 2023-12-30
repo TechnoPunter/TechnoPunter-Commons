@@ -40,6 +40,8 @@ class RiskCalc:
             accu_df[s_cols].assign(signal='-1').rename(columns={'s_pct_success': 'pct_success',
                                                                 's_reward_factor': 'reward_factor'})
         ])
+        # Shifting the accuracy 1 row below since accuracy is post facto for RF run
+        comb_accu_df['reward_factor'] = comb_accu_df.groupby(['scrip', 'strategy', 'signal'])['reward_factor'].shift(1)
         comb_accu_df['key'] = (comb_accu_df[['scrip', 'strategy', 'signal', 'trade_date']].agg(':'.join, axis=1))
         comb_accu_df.set_index(keys='key', inplace=True)
         comb_accu_df = comb_accu_df.assign(
