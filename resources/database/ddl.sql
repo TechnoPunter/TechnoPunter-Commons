@@ -268,3 +268,57 @@ CREATE TABLE trade_log(
     max_mtm_pct float4,
     CONSTRAINT trade_log_pk PRIMARY KEY (trade_log_id)
 );
+
+CREATE TABLE bt_accuracy_summary (
+    bt_accu_id int8 NOT NULL GENERATED ALWAYS AS IDENTITY( INCREMENT BY 1 MINVALUE 1 MAXVALUE 2147483647 START 1 CACHE 1 NO CYCLE),
+    run_type VARCHAR,
+    scrip VARCHAR,
+    strategy VARCHAR,
+    trade_date VARCHAR,
+    trades INTEGER,
+    pct_entry NUMERIC,
+    l_num_predictions INTEGER,
+    l_num_trades INTEGER,
+    l_pct_success NUMERIC,
+    l_pnl NUMERIC,
+    l_avg_cost NUMERIC,
+    l_pct_returns NUMERIC,
+    l_pct_entry NUMERIC,
+    l_reward_factor NUMERIC,
+    s_num_predictions INTEGER,
+    s_num_trades INTEGER,
+    s_pct_success NUMERIC,
+    s_pnl NUMERIC,
+    s_avg_cost NUMERIC,
+    s_pct_returns NUMERIC,
+    s_pct_entry NUMERIC,
+    s_reward_factor NUMERIC
+);
+
+
+CREATE TABLE bt_accuracy_trades (
+    bt_accu_trade_id int8 NOT NULL GENERATED ALWAYS AS IDENTITY( INCREMENT BY 1 MINVALUE 1 MAXVALUE 2147483647 START 1 CACHE 1 NO CYCLE),
+    run_type VARCHAR,
+    scrip VARCHAR,
+    strategy VARCHAR,
+    tick NUMERIC,
+    "date" VARCHAR,
+    signal NUMERIC,
+    target NUMERIC,
+    bod_strength NUMERIC,
+    bod_sl NUMERIC,
+    sl_range NUMERIC,
+    trail_sl NUMERIC,
+    strength NUMERIC,
+    entry_time int8,
+    entry_price NUMERIC,
+    status VARCHAR,
+    exit_price NUMERIC,
+    exit_time int8,
+    pnl NUMERIC,
+    sl NUMERIC,
+    sl_update_cnt NUMERIC,
+    max_mtm NUMERIC,
+    max_mtm_pct NUMERIC
+);
+
