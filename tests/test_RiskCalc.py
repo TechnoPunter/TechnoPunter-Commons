@@ -1,4 +1,7 @@
 from Utils import *
+from commons.loggers.setup_logger import setup_logging
+
+setup_logging("risk-calc-test.log")
 
 if os.path.exists('/var/www/trade-exec-engine/resources/test'):
     REPO_DIR = '/var/www/trade-exec-engine/resources/test'
@@ -41,14 +44,15 @@ class TestRiskCalc(unittest.TestCase):
         signal = 1
         tick = 0.05
         acct = "Trader-V2-Pralhad"
-        entry = 100.00
+        prev_close = 100.00
+        entry = 100.10
         pred_target = 101.00
 
         t_r, sl_r, t_sl_r = rc.calc_risk_params(scrip=scrip, strategy=strategy, signal=signal, tick=tick, acct=acct,
-                                                entry=entry, pred_target=pred_target)
+                                                prev_close=prev_close, entry=entry, pred_target=pred_target)
 
-        self.assertEqual('1.10', t_r, "Reward is not matching")
-        self.assertEqual('0.65', sl_r, "SL is not matching")
+        self.assertEqual('1.00', t_r, "Reward is not matching")
+        self.assertEqual('0.60', sl_r, "SL is not matching")
         self.assertEqual('0.25', t_sl_r, "T-SL is not matching")
 
     def test_calc_risk_params_acct(self):
@@ -59,15 +63,16 @@ class TestRiskCalc(unittest.TestCase):
         signal = 1
         tick = 0.05
         acct = "Trader-V2-Mahi"
-        entry = 100.00
+        prev_close = 100.00
+        entry = 100.10
         pred_target = 101.00
 
         t_r, sl_r, t_sl_r = rc.calc_risk_params(scrip=scrip, strategy=strategy, signal=signal, tick=tick, acct=acct,
-                                                entry=entry, pred_target=pred_target)
+                                                prev_close=prev_close, entry=entry, pred_target=pred_target)
 
-        self.assertEqual('1.20', t_r, "Reward is not matching")
+        self.assertEqual('1.10', t_r, "Reward is not matching")
         self.assertEqual('0.35', sl_r, "SL is not matching")
-        self.assertEqual('0.20', t_sl_r, "T-SL is not matching")
+        self.assertEqual('0.15', t_sl_r, "T-SL is not matching")
 
     def test_calc_risk_params_fallback(self):
         rc = RiskCalc(mode="PRESET")
@@ -77,14 +82,15 @@ class TestRiskCalc(unittest.TestCase):
         signal = 1
         tick = 0.05
         acct = "X"
-        entry = 100.00
+        prev_close = 100.00
+        entry = 100.10
         pred_target = 101.00
 
         t_r, sl_r, t_sl_r = rc.calc_risk_params(scrip=scrip, strategy=strategy, signal=signal, tick=tick, acct=acct,
-                                                entry=entry, pred_target=pred_target)
+                                                prev_close=prev_close, entry=entry, pred_target=pred_target)
 
-        self.assertEqual('1.00', t_r, "Reward is not matching")
-        self.assertEqual('0.50', sl_r, "SL is not matching")
+        self.assertEqual('0.90', t_r, "Reward is not matching")
+        self.assertEqual('0.45', sl_r, "SL is not matching")
         self.assertEqual('0.15', t_sl_r, "T-SL is not matching")
 
     def test_calc_risk_params_accuracy(self):
@@ -97,15 +103,17 @@ class TestRiskCalc(unittest.TestCase):
         trade_dt = "2023-10-05"
         tick = 0.05
         acct = "X"
-        entry = 100.00
+        prev_close = 100.00
+        entry = 100.10
         pred_target = 101.00
 
         t_r, sl_r, t_sl_r = rc.calc_risk_params(scrip=scrip, strategy=strategy, signal=signal, tick=tick, acct=acct,
-                                                entry=entry, pred_target=pred_target, risk_date=trade_dt)
+                                                prev_close=prev_close, entry=entry, pred_target=pred_target,
+                                                risk_date=trade_dt)
 
-        self.assertEqual('3.75', t_r, "Reward is not matching")
-        self.assertEqual('0.95', sl_r, "SL is not matching")
-        self.assertEqual('0.30', t_sl_r, "T-SL is not matching")
+        self.assertEqual('3.65', t_r, "Reward is not matching")
+        self.assertEqual('0.90', sl_r, "SL is not matching")
+        self.assertEqual('0.25', t_sl_r, "T-SL is not matching")
 
 
 if __name__ == '__main__':
