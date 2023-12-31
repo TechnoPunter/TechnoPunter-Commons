@@ -45,7 +45,7 @@ class RiskCalc:
         comb_accu_df['key'] = (comb_accu_df[['scrip', 'strategy', 'signal', 'trade_date']].agg(':'.join, axis=1))
         comb_accu_df.set_index(keys='key', inplace=True)
         comb_accu_df = comb_accu_df.assign(
-            risk_reward_ratio=comb_accu_df.pct_success / 100,
+            risk_reward_ratio=self.default_risk_reward_ratio,
             trail_sl_factor=self.default_trail_sl_factor
         )
         comb_accu_df.drop(columns=['scrip', 'strategy', 'trade_date', 'pct_success', 'signal'], inplace=True)

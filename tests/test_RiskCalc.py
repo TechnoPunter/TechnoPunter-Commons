@@ -112,8 +112,8 @@ class TestRiskCalc(unittest.TestCase):
                                                 risk_date=trade_dt)
 
         self.assertEqual('3.65', t_r, "Reward is not matching")
-        self.assertEqual('0.90', sl_r, "SL is not matching")
-        self.assertEqual('0.25', t_sl_r, "T-SL is not matching")
+        self.assertEqual('1.80', sl_r, "SL is not matching")
+        self.assertEqual('0.55', t_sl_r, "T-SL is not matching")
 
 
 if __name__ == '__main__':
