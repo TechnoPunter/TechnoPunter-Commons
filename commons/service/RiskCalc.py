@@ -103,26 +103,43 @@ class RiskCalc:
         else:
             return False
 
-    def calc_risk_params(self, scrip: str, strategy: str, signal: int, tick: float, acct: str, entry: float,
-                         pred_target: float, risk_date: str = None) -> (str, str):
+    def calc_risk_params(self, scrip: str, strategy: str, signal: int, tick: float, acct: str,
+                         prev_close: float, entry: float, pred_target: float, risk_date: str = None) -> (str, str):
         """
         Get RF & RRR for the A/c, Scrip, Strategy, direction.
         Example:
-        entry = 100
-        predicted target = 101
-        signal = 1
-
         RF = 0.1 (i.e. +10%)
         RRR = 1.5 (i.e. Will risk 1 for earning 1.5)
 
-        adjusted target range = (101 - 100) * 110% => 1.1
+        BUY SIDE
+        --------
+        prev_close = 100
+        predicted target = 102
+        entry (i.e. LTP) = 100.50
+        signal = 1
+
+            original target range = abs(102 - 100) => 2
+            adjusted target range = 2 * 110% => 2.2
+            entry target range = abs(100 + signal * 2.2 - 100.5) => 1.7
+
+
+        SELL SIDE
+        ---------
+        prev_close = 100
+        predicted target = 98
+        entry (i.e. LTP) = 99.50
+        signal = -1
+
+            original target range = abs(98 - 100) => 2
+            adjusted target range = 2 * 110% => 2.2
+            entry target range = abs(100 + signal * 2.2 - 99.5) => 1.7
 
         rrr factor = 1 / 1.5 => 0.66
-        adjusted sl range = 1.1 * 0.66 => 0.73
+        adjusted sl range = 1.7 * 0.66 => 1.12
 
         Now applying rounding based on tick
 
-        (ret_adj_target_range, ret_adj_sl_range) = (1.1, 0.75)
+        (ret_entry_target_range, ret_adj_sl_range) = (1.7, 1.12)
 
         Edge Case Handling:
         In case we have received an invalid target i.e. -->
@@ -136,6 +153,7 @@ class RiskCalc:
         :param strategy:
         :param signal:
         :param tick:
+        :param prev_close:
         :param entry:
         :param pred_target:
         :param risk_date: Date for which we need the RF, RRR & T-SL Values
@@ -178,19 +196,21 @@ class RiskCalc:
 
         logger.debug(f"Params: {reward_factor}, {risk_reward_ratio}, {trail_sl_factor}")
 
-        target_range = abs(pred_target - entry)
+        original_target_range = abs(pred_target - prev_close)
 
-        adj_target_range = target_range * (1 + reward_factor)
+        adj_target_range = original_target_range * (1 + reward_factor)
+        entry_target_range = abs(prev_close + signal * adj_target_range - entry)
 
-        adj_sl_range = adj_target_range * risk_reward_ratio
+        adj_sl_range = entry_target_range * risk_reward_ratio
         adj_trail_sl_range = adj_sl_range * trail_sl_factor
 
-        ret_adj_target_range = round_price(price=adj_target_range, tick=tick, scrip=scrip)
+        ret_entry_target_range = round_price(price=entry_target_range, tick=tick, scrip=scrip)
         ret_adj_sl_range = round_price(price=adj_sl_range, tick=tick, scrip=scrip)
         ret_adj_trail_sl_range = round_price(price=adj_trail_sl_range, tick=tick, scrip=scrip)
-        logger.info(f"calc_risk_params: Key: {key} Params: {reward_factor}, {risk_reward_ratio}, {trail_sl_factor} "
-                    f"Target:{ret_adj_target_range} SL:{ret_adj_sl_range} Trail SL: {ret_adj_trail_sl_range}")
-        return ret_adj_target_range, ret_adj_sl_range, ret_adj_trail_sl_range
+        logger.info(f"calc_risk_params:\nKey: {key} Params: {reward_factor}, {risk_reward_ratio}, {trail_sl_factor}\n"
+                    f"Prev Close: {prev_close}, Pred Target: {pred_target}, Entry: {entry}\n"
+                    f"Target:{ret_entry_target_range} SL:{ret_adj_sl_range} Trail SL: {ret_adj_trail_sl_range}")
+        return ret_entry_target_range, ret_adj_sl_range, ret_adj_trail_sl_range
 
 
 if __name__ == '__main__':
@@ -205,11 +225,13 @@ if __name__ == '__main__':
     _signal = 1
     _tick = 0.05
     _acct = "X"
-    _entry = 100.00
-    _pred_target = 101.00
+    _prev_close = 100.00
+    _entry = 100.50
+    _pred_target = 102.00
+
     t_range, s_range, t_sl_range = rc.calc_risk_params(scrip=_scrip, strategy=_strategy, signal=_signal,
                                                        tick=_tick, acct=_acct,
-                                                       entry=_entry, pred_target=_pred_target)
+                                                       prev_close=_prev_close, entry=_entry, pred_target=_pred_target)
     print(f"{t_range}, {s_range}, {t_sl_range}")
 
     _scrip = "NSE_APOLLOHOSP"
@@ -217,7 +239,8 @@ if __name__ == '__main__':
     _trade_dt = '2023-10-05'
     _signal = 1
 
-    t_range, s_range, t_sl_range = rc.calc_risk_params(scrip=_scrip, strategy=_strategy, signal=_signal, tick=_tick,
-                                                       acct=_acct,
-                                                       entry=_entry, pred_target=_pred_target, risk_date=_trade_dt)
+    t_range, s_range, t_sl_range = rc.calc_risk_params(scrip=_scrip, strategy=_strategy, signal=_signal,
+                                                       tick=_tick, acct=_acct,
+                                                       prev_close=_prev_close, entry=_entry, pred_target=_pred_target,
+                                                       risk_date=_trade_dt)
     print(f"{t_range}, {s_range}, {t_sl_range}")
