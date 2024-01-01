@@ -207,6 +207,7 @@ CREATE TABLE public.trades_mtm(
 
 CREATE INDEX trades_mtm_scrip_idx ON public.trades_mtm (scrip,strategy);
 
+alter table public.trades_mtm add trade_time varchar;
 
 CREATE TABLE params_hist(
     params_id int8 NOT NULL GENERATED ALWAYS AS IDENTITY( INCREMENT BY 1 MINVALUE 1 MAXVALUE 2147483647 START 1 CACHE 1 NO CYCLE),
