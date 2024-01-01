@@ -11,7 +11,6 @@ class TradesMTM(Base):
     scrip = Column(String)
     strategy = Column(String)
     trade_date = Column(String)
-    trade_time = Column(String)
     datetime = Column(String)
     signal = Column(Integer)
     time = Column(Integer)
