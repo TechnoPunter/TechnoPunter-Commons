@@ -53,7 +53,8 @@ class FastBT:
         else:
             # For NEXT-CLOSE we won't have base date at COB
             # Last candle of the day is closing price for the day! However, time of day is 1st candle's epoch
-            base_data = tick_data.iloc[-1:]
+            base_data = tick_data.copy()
+            base_data = base_data.iloc[-1:]
             base_data.loc[:, 'time'] = tick_data.iloc[0]['time']
         base_data = base_data[['time', 'close']]
         base_data.rename(columns={"close": "day_close"}, inplace=True)
