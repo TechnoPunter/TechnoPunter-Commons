@@ -356,6 +356,7 @@ class Shoonya:
             recs.append(json.loads(price))
 
         df = self.__format_result(recs)
+        df.drop_duplicates(inplace=True)
         return scrip_name, Interval.in_daily, df
 
     def api_get_time_series(self, scrip_name, num_days: int = 7):
@@ -380,6 +381,7 @@ class Shoonya:
         print(len(prices))
 
         df = self.__format_result(prices, time_format="datetime")
+        df.drop_duplicates(inplace=True)
         return scrip_name, Interval.in_1_minute, df
 
     def get_prices_data(self, scrip_names: [str], opts: [str] = None, base_num_days: int = 7, tick_num_days: int = 7):
